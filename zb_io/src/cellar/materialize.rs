@@ -38,6 +38,11 @@ impl Cellar {
         Ok(Self { cellar_dir })
     }
 
+    /// The Cellar directory itself.
+    pub fn dir(&self) -> &Path {
+        &self.cellar_dir
+    }
+
     pub fn keg_path(&self, name: &str, version: &str) -> PathBuf {
         self.cellar_dir.join(name).join(version)
     }

@@ -41,6 +41,8 @@ pub async fn execute(
     }
 
     let mut installed_count = 0usize;
+    let mut notices = Vec::new();
+    let mut post_install_failures = Vec::new();
 
     if !normalized_names.is_empty() {
         let plan = match installer
@@ -60,7 +62,10 @@ pub async fn execute(
             }
         };
 
-        installed_count += execute_formula_plan(installer, &formulas, plan, no_link, ui).await?;
+        let result = execute_formula_plan(installer, &formulas, plan, no_link, ui).await?;
+        installed_count += result.installed;
+        notices.extend(result.notices);
+        post_install_failures.extend(result.post_install_failures);
     }
 
     if !cask_names.is_empty() {
@@ -82,7 +87,46 @@ pub async fn execute(
     ))
     .map_err(ui_error)?;
 
-    Ok(())
+    report_post_install(ui, &notices, post_install_failures)
+}
+
+/// Print post-install notices and failures. Every package is installed and
+/// linked whatever happened in post-install, so this comes after the
+/// summary, and a failure still makes the command fail.
+pub fn report_post_install(
+    ui: &mut StdUi,
+    notices: &[zb_io::PostInstallNotice],
+    mut failures: Vec<zb_core::Error>,
+) -> Result<(), zb_core::Error> {
+    for notice in notices {
+        ui.note(format!(
+            "{}: {}",
+            style(&notice.name).bold(),
+            notice.message
+        ))
+        .map_err(ui_error)?;
+    }
+    let Some(last) = failures.pop() else {
+        return Ok(());
+    };
+    ui.blank_line().map_err(ui_error)?;
+    for failure in &failures {
+        ui.error(failure).map_err(ui_error)?;
+    }
+    ui.println("The packages are installed, but their post-install steps did not finish.")
+        .map_err(ui_error)?;
+    ui.println(format!(
+        "Retry with {}",
+        style("zb postinstall <formula>").bold()
+    ))
+    .map_err(ui_error)?;
+    Err(last)
+}
+
+/// The progress bar key for a package's post-install, distinct from its
+/// install bar, which is finished by then.
+fn post_install_key(name: &str) -> String {
+    format!("{name} post-install")
 }
 
 pub async fn execute_formula_plan(
@@ -91,7 +135,7 @@ pub async fn execute_formula_plan(
     plan: zb_io::InstallPlan,
     no_link: bool,
     ui: &mut StdUi,
-) -> Result<usize, zb_core::Error> {
+) -> Result<zb_io::ExecuteResult, zb_core::Error> {
     ui.heading(format!(
         "Resolving dependencies ({} packages)...",
         plan.items.len()
@@ -203,6 +247,28 @@ pub async fn execute_formula_plan(
                     pb.finish();
                 }
             }
+            InstallProgress::PostInstallStarted { name } => {
+                let pb = multi_clone.add(ProgressBar::new_spinner());
+                pb.set_style(spinner_style_clone.clone());
+                pb.set_prefix(name.clone());
+                pb.set_message("running post-install...");
+                pb.enable_steady_tick(std::time::Duration::from_millis(80));
+                bars.insert(post_install_key(&name), pb);
+            }
+            InstallProgress::PostInstallCompleted { name } => {
+                if let Some(pb) = bars.get(&post_install_key(&name)) {
+                    pb.set_style(done_style_clone.clone());
+                    pb.set_message(format!("{} post-install done", style("✓").green()));
+                    pb.finish();
+                }
+            }
+            InstallProgress::PostInstallFailed { name, .. } => {
+                if let Some(pb) = bars.get(&post_install_key(&name)) {
+                    pb.set_style(done_style_clone.clone());
+                    pb.set_message(format!("{} post-install failed", style("✗").red()));
+                    pb.finish();
+                }
+            }
         }
     }));
 
@@ -220,7 +286,7 @@ pub async fn execute_formula_plan(
     }
 
     match result_val {
-        Ok(result) => Ok(result.installed),
+        Ok(result) => Ok(result),
         Err(ref e @ zb_core::Error::LinkConflict { ref conflicts }) => {
             ui.blank_line().map_err(ui_error)?;
             ui.error("The link step did not complete successfully.")

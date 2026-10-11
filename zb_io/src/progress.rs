@@ -26,6 +26,13 @@ pub enum InstallProgress {
     LinkSkipped { name: String, reason: String },
     /// Installation completed for a package (final state)
     InstallCompleted { name: String },
+    /// Running the package's post-install steps, after every package in
+    /// the plan is installed and linked
+    PostInstallStarted { name: String },
+    /// Post-install steps completed
+    PostInstallCompleted { name: String },
+    /// A post-install step failed; the package stays installed
+    PostInstallFailed { name: String, message: String },
 }
 
 /// Callback type for progress reporting

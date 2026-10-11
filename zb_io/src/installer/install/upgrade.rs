@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use zb_core::{Error, InstallMethod};
 
-use super::{InstallPlan, Installer, acquire_install_lock};
+use super::{ExecuteResult, InstallPlan, Installer, acquire_install_lock};
 use crate::network::download::{DownloadProgressCallback, DownloadRequest};
 use crate::progress::{InstallProgress, ProgressCallback};
 
@@ -19,15 +19,15 @@ impl Installer {
     /// leave the old cellar directory behind on disk (the leak this method
     /// exists to fix).
     ///
-    /// Returns `Ok(())` when the package is already on its latest version,
-    /// `Error::NotInstalled` when there is no existing installation.
+    /// Returns an empty result when the package is already on its latest
+    /// version, `Error::NotInstalled` when there is no existing installation.
     pub async fn upgrade(
         &mut self,
         name: &str,
         build_from_source: bool,
         link: bool,
         progress: Option<Arc<ProgressCallback>>,
-    ) -> Result<(), Error> {
+    ) -> Result<ExecuteResult, Error> {
         // One lock for the entire flow — uninstall + install must not race
         // with other zb processes touching the same package.
         let _lock = acquire_install_lock(&self.locks_dir)?;
@@ -39,7 +39,7 @@ impl Installer {
         // `plan_with_options` doesn't consult the installed DB, so an
         // empty-plan check wouldn't fire on already-current packages.
         if self.is_outdated(name).await?.is_none() {
-            return Ok(());
+            return Ok(ExecuteResult::default());
         }
 
         let plan = self
@@ -53,9 +53,7 @@ impl Installer {
         self.uninstall_by_version(name, &old.version)?;
 
         // We already hold the lock, so call the no-lock variant.
-        self.execute_inner(plan, link, progress).await?;
-
-        Ok(())
+        self.execute_inner(plan, link, progress).await
     }
 
     /// Pre-download bottle artifacts in `plan` into the blob cache. No-op
