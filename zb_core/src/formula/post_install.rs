@@ -17,7 +17,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 /// Where a step path is anchored. Mirrors the `base:` keys Homebrew emits.
-#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum PathBase {
     /// An absolute path, or one with template tokens that expand to one.
@@ -64,7 +64,7 @@ pub enum PathBase {
 
 /// A path in a step: a (possibly templated, possibly globbed) string plus
 /// the directory it is relative to.
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct PathSpec {
     pub path: String,
     #[serde(default)]
@@ -93,7 +93,7 @@ impl PathSpec {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Platform {
     Macos,
@@ -101,7 +101,7 @@ pub enum Platform {
 }
 
 /// A condition on a step. Every guard must hold for the step to run.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 #[serde(try_from = "RawGuard")]
 pub enum Guard {
     IfExists(PathSpec),

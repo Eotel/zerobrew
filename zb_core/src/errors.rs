@@ -9,19 +9,54 @@ pub struct ConflictedLink {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
-    UnsupportedBottle { name: String },
-    ChecksumMismatch { expected: String, actual: String },
-    LinkConflict { conflicts: Vec<ConflictedLink> },
-    StoreCorruption { message: String },
-    NetworkFailure { message: String },
-    MissingFormula { name: String },
-    UnsupportedTap { name: String },
-    UnsupportedFormula { name: String, reason: String },
-    DependencyCycle { cycle: Vec<String> },
-    NotInstalled { name: String },
-    FileError { message: String },
-    InvalidArgument { message: String },
-    ExecutionError { message: String },
+    UnsupportedBottle {
+        name: String,
+    },
+    ChecksumMismatch {
+        expected: String,
+        actual: String,
+    },
+    LinkConflict {
+        conflicts: Vec<ConflictedLink>,
+    },
+    StoreCorruption {
+        message: String,
+    },
+    NetworkFailure {
+        message: String,
+    },
+    MissingFormula {
+        name: String,
+    },
+    UnsupportedTap {
+        name: String,
+    },
+    UnsupportedFormula {
+        name: String,
+        reason: String,
+    },
+    DependencyCycle {
+        cycle: Vec<String>,
+    },
+    NotInstalled {
+        name: String,
+    },
+    FileError {
+        message: String,
+    },
+    InvalidArgument {
+        message: String,
+    },
+    ExecutionError {
+        message: String,
+    },
+    /// A post-install step failed. The keg is installed and linked; the
+    /// step can be retried with `zb postinstall`.
+    PostInstallFailed {
+        name: String,
+        step: String,
+        message: String,
+    },
 }
 
 impl fmt::Display for Error {
@@ -71,6 +106,11 @@ impl fmt::Display for Error {
             Error::FileError { message } => write!(f, "file error: {message}"),
             Error::InvalidArgument { message } => write!(f, "invalid argument: {message}"),
             Error::ExecutionError { message } => write!(f, "{message}"),
+            Error::PostInstallFailed {
+                name,
+                step,
+                message,
+            } => write!(f, "post-install step `{step}` of {name} failed: {message}"),
         }
     }
 }

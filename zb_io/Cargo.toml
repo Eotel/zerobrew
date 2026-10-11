@@ -24,6 +24,7 @@ tar.workspace = true
 tokio.workspace = true
 fs4.workspace = true
 walkdir.workspace = true
+globset.workspace = true
 xz2.workspace = true
 zstd.workspace = true
 zip.workspace = true

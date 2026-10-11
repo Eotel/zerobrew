@@ -273,6 +273,34 @@ fn relocate_binary(path: &Path, relocation: &Relocation) -> Result<BinaryOutcome
     })
 }
 
+/// Set a library's install name (`LC_ID_DYLIB`), as `install_name_tool -id`
+/// would, and re-sign it. Used by the `change_dylib_id` post-install step.
+pub(crate) fn set_install_name(path: &Path, id: &str) -> Result<(), Error> {
+    let metadata = fs::symlink_metadata(path).map_err(Error::store("failed to stat file"))?;
+    let mut contents = fs::read(path).map_err(Error::store("failed to read file"))?;
+    if !macho::has_macho_magic(&contents) {
+        return Err(Error::StoreCorruption {
+            message: format!("{} is not a Mach-O file", path.display()),
+        });
+    }
+    let rewrite = macho::rewrite(&mut contents, |kind, _| {
+        (kind == PathKind::InstallName).then(|| id.to_string())
+    })
+    .map_err(|e| Error::StoreCorruption {
+        message: format!("failed to parse {}: {e}", path.display()),
+    })?;
+    if rewrite.written.is_empty() && rewrite.unfit.is_empty() {
+        return Ok(());
+    }
+    let writable = Writable::lift(path, &metadata)?;
+    write_ranges(path, &contents, &rewrite.written)?;
+    if !rewrite.unfit.is_empty() {
+        change_with_install_name_tool(path, &rewrite.unfit)?;
+    }
+    sign(&[path]);
+    writable.restore()
+}
+
 /// A file with Mach-O-looking magic that is not Mach-O still gets its
 /// literal prefix rewritten, but is never signed.
 fn finish_untouched(
