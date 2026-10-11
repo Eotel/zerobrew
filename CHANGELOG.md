@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Formulae's post-install steps now run after installing, the same declarative steps Homebrew 7 publishes in its API: `run`, `symlink`, `copy`, `mkdir_p`, `set_permissions`, `inreplace`, `change_dylib_id` and the rest. ca-certificates builds its cert bundle, openssl@3 links to it, node gets its `npm`, python's venv scripts become writable. A step that fails leaves the package installed and linked, is reported after the summary, and makes the command exit non-zero. Steps that need sudo and a few formula-specific ones (`bootstrap_cpython`, `configure_php`, `init_data_dir`, `configure_gcc_runtime` on Linux) are reported as unsupported rather than skipped ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
+- The CA bundle ca-certificates builds in post-install is cached under `cache/post-install`, keyed on the Mozilla bundle and the system trust store, so reinstalling it or anything that depends on it copies the bundle instead of spending five seconds rebuilding it. The bytes are the script's own ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
 - `zb postinstall <formula>...` runs the post-install steps of installed packages again, like `brew postinstall`. Run it once for packages installed by earlier releases ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
 
 ## [0.4.0] - 2026-10-07

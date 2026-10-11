@@ -3,7 +3,7 @@
 //! prefix set up by either tool looks the same.
 
 use std::collections::BTreeMap;
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::{Read, Write};
 use std::os::unix::fs::symlink;
@@ -15,6 +15,7 @@ use regex::Regex;
 use tracing::{debug, warn};
 use zb_core::{PathSpec, ProcessMatch, StepAction, Sudo};
 
+use super::ca_bundle::CaBundle;
 use super::paths::{self, expand_glob, resolve};
 use super::template::expand;
 use super::{PostInstallContext, StepError, clang};
@@ -133,16 +134,31 @@ pub(super) fn run_step(
             sudo,
         } => {
             refuse_sudo(*sudo)?;
-            run_command(
-                ctx,
-                command,
-                args,
-                env,
-                stdin_path.as_ref(),
-                stdout_path.as_ref(),
-                chdir.as_ref(),
-                *allow_failure,
-            )?;
+            let program = paths::command(ctx, command)?;
+            let args = args
+                .iter()
+                .map(|arg| expand(ctx, arg))
+                .collect::<Result<Vec<_>, _>>()?;
+            let bundle = CaBundle::detect(ctx, &program, &args);
+            if let Some(bundle) = &bundle
+                && bundle.restore()?
+            {
+                debug!("restored the CA bundle from the cache");
+            } else {
+                run_command(
+                    ctx,
+                    &program,
+                    &args,
+                    env,
+                    stdin_path.as_ref(),
+                    stdout_path.as_ref(),
+                    chdir.as_ref(),
+                    *allow_failure,
+                )?;
+                if let Some(bundle) = &bundle {
+                    bundle.store()?;
+                }
+            }
         }
         StepAction::TerminateProcess {
             name,
@@ -686,7 +702,7 @@ fn output_tail(output: &[u8]) -> String {
 #[allow(clippy::too_many_arguments)]
 fn run_command(
     ctx: &PostInstallContext,
-    command: &PathSpec,
+    program: &OsStr,
     args: &[String],
     env: &BTreeMap<String, String>,
     stdin_path: Option<&PathSpec>,
@@ -694,18 +710,13 @@ fn run_command(
     chdir: Option<&PathSpec>,
     allow_failure: bool,
 ) -> Result<(), StepError> {
-    let program = paths::command(ctx, command)?;
-    let args = args
-        .iter()
-        .map(|arg| expand(ctx, arg))
-        .collect::<Result<Vec<_>, _>>()?;
     let home = tempfile::Builder::new()
         .prefix(&format!("{}-postinstall-", ctx.name))
         .tempdir_in(&ctx.temp)
         .map_err(StepError::io("creating a temporary home"))?;
 
-    let mut cmd = Command::new(&program);
-    cmd.args(&args)
+    let mut cmd = Command::new(program);
+    cmd.args(args)
         .envs(command_env(ctx, home.path()))
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

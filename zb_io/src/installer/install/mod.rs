@@ -56,6 +56,8 @@ pub struct Installer {
     pub(crate) db: Database,
     prefix: PathBuf,
     locks_dir: PathBuf,
+    /// `<root>/cache`, beside the blob cache.
+    cache_dir: PathBuf,
 }
 
 #[derive(Debug)]
@@ -119,6 +121,10 @@ impl Installer {
         prefix: PathBuf,
         locks_dir: PathBuf,
     ) -> Self {
+        let cache_dir = locks_dir
+            .parent()
+            .map(|root| root.join("cache"))
+            .unwrap_or_else(|| prefix.join("cache"));
         Self {
             api_client,
             downloader: ParallelDownloader::new(blob_cache),
@@ -128,6 +134,7 @@ impl Installer {
             db,
             prefix,
             locks_dir,
+            cache_dir,
         }
     }
 
@@ -472,6 +479,7 @@ pub fn create_installer(
         db,
         prefix: prefix.to_path_buf(),
         locks_dir,
+        cache_dir: root.join("cache"),
     })
 }
 

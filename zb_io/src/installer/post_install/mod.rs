@@ -11,6 +11,7 @@
 //! linked, the failure is reported, and `zb postinstall` retries it, which
 //! is also what Homebrew does.
 
+mod ca_bundle;
 mod clang;
 mod paths;
 mod steps;
@@ -36,6 +37,9 @@ pub struct PostInstallContext {
     pub keg: PathBuf,
     /// Scratch space. Each `run` step gets a fresh `HOME` under it.
     pub temp: PathBuf,
+    /// Where results worth keeping between installs go, such as the CA
+    /// bundle. Survives uninstalls; `zb reset` removes it.
+    pub cache: PathBuf,
 }
 
 /// Why a step did not complete.
@@ -153,6 +157,7 @@ pub(crate) mod test_support {
             version: version.split('_').next().unwrap().to_string(),
             keg,
             temp,
+            cache: root.join("cache/post-install"),
         }
     }
 }
