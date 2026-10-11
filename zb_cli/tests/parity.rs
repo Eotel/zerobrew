@@ -569,6 +569,27 @@ fn sqlite_kegs_match_homebrew() {
     check_kegs(case("sqlite"));
 }
 
+/// Post-install writes outside the keg, so the keg check cannot see it.
+/// ca-certificates' step builds the cert bundle from the system keychain
+/// and the Mozilla bundle; both tools must produce the same file.
+#[test]
+fn ca_certificates_bundle_matches_homebrew() {
+    let Some((brew, zb)) = install_both(case("ca-certificates")) else {
+        return;
+    };
+    let bundle = "etc/ca-certificates/cert.pem";
+    let reference = fs::read(brew.prefix.join(bundle))
+        .unwrap_or_else(|e| panic!("Homebrew wrote no {bundle}: {e}"));
+    let ours =
+        fs::read(zb.prefix().join(bundle)).unwrap_or_else(|e| panic!("zb wrote no {bundle}: {e}"));
+    assert!(
+        reference == ours,
+        "{bundle} differs: {} bytes from Homebrew, {} from zb",
+        reference.len(),
+        ours.len()
+    );
+}
+
 /// The symlinks Homebrew creates in the prefix for a keg, keyed by their path
 /// relative to the prefix, with targets relative to the prefix too.
 fn links_into(prefix: &Path, keg: &Path) -> BTreeMap<String, String> {
