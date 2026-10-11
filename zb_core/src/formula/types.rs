@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
+use super::post_install::PostInstallStep;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum KegOnly {
     #[default]
@@ -141,6 +143,9 @@ pub struct Formula {
     /// Names the formula used to have, also linked under `opt/`.
     #[serde(default)]
     pub oldnames: Vec<String>,
+    /// Homebrew's declarative post-install steps, run after linking.
+    #[serde(default)]
+    pub post_install_steps: Vec<PostInstallStep>,
 }
 
 impl Formula {
