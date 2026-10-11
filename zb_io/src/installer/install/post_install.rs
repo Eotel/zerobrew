@@ -16,6 +16,7 @@ impl Installer {
                 .cellar
                 .keg_path(&formula.name, &formula.effective_version()),
             temp: self.prefix.join("tmp"),
+            cache: self.cache_dir.join("post-install"),
         }
     }
 
