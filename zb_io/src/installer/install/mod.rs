@@ -2,10 +2,12 @@ mod bottle;
 pub mod doctor;
 mod outdated;
 mod plan;
+mod post_install;
 mod source;
 mod uninstall;
 mod upgrade;
 
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -74,9 +76,21 @@ pub struct PlanFailure {
     pub error: Error,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ExecuteResult {
     pub installed: usize,
+    /// Messages from `warn` post-install steps.
+    pub notices: Vec<PostInstallNotice>,
+    /// Packages whose post-install steps failed. Each is installed and
+    /// linked; the steps can be retried with `zb postinstall`.
+    pub post_install_failures: Vec<Error>,
+}
+
+/// A message a formula's post-install asked to show.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PostInstallNotice {
+    pub name: String,
+    pub message: String,
 }
 
 /// A package that has a newer version available upstream.
@@ -154,16 +168,26 @@ impl Installer {
             }
         };
 
+        // Post-install runs once everything is installed, in plan order, so
+        // a step can rely on a dependency that is still downloading here.
+        let positions: HashMap<String, usize> = plan
+            .items
+            .iter()
+            .enumerate()
+            .map(|(position, item)| (item.install_name.clone(), position))
+            .collect();
+
         let (bottle_items, source_items): (Vec<_>, Vec<_>) = plan
             .items
             .into_iter()
             .partition(|item| matches!(item.method, InstallMethod::Bottle(_)));
 
         if bottle_items.is_empty() && source_items.is_empty() {
-            return Ok(ExecuteResult { installed: 0 });
+            return Ok(ExecuteResult::default());
         }
 
         let mut installed = 0usize;
+        let mut finished: Vec<&PlannedInstall> = Vec::new();
         let mut error: Option<Error> = None;
 
         if !bottle_items.is_empty() {
@@ -233,7 +257,10 @@ impl Installer {
                     Some(joined) = preparing.next() => match joined {
                         Ok((index, Ok(entry))) => {
                             match self.finish_bottle_item(&bottle_items[index], &entry, link, &report) {
-                                Ok(()) => installed += 1,
+                                Ok(()) => {
+                                    installed += 1;
+                                    finished.push(&bottle_items[index]);
+                                }
                                 Err(e) => error = Some(e),
                             }
                         }
@@ -261,10 +288,40 @@ impl Installer {
                 .install_from_source(item, build_plan, link, &report)
                 .await
             {
-                Ok(()) => installed += 1,
+                Ok(()) => {
+                    installed += 1;
+                    finished.push(item);
+                }
                 Err(e) => {
                     error = Some(e);
                     continue;
+                }
+            }
+        }
+
+        finished.sort_by_key(|item| positions.get(&item.install_name).copied());
+        let mut notices = Vec::new();
+        let mut post_install_failures = Vec::new();
+        for item in finished {
+            if item.formula.post_install_steps.is_empty() {
+                continue;
+            }
+            let name = item.formula.name.clone();
+            report(InstallProgress::PostInstallStarted { name: name.clone() });
+            match self.run_post_install(&item.formula).await {
+                Ok(messages) => {
+                    notices.extend(messages.into_iter().map(|message| PostInstallNotice {
+                        name: name.clone(),
+                        message,
+                    }));
+                    report(InstallProgress::PostInstallCompleted { name });
+                }
+                Err(e) => {
+                    report(InstallProgress::PostInstallFailed {
+                        name,
+                        message: e.to_string(),
+                    });
+                    post_install_failures.push(e);
                 }
             }
         }
@@ -273,7 +330,11 @@ impl Installer {
             return Err(e);
         }
 
-        Ok(ExecuteResult { installed })
+        Ok(ExecuteResult {
+            installed,
+            notices,
+            post_install_failures,
+        })
     }
 
     pub async fn install(&mut self, names: &[String], link: bool) -> Result<ExecuteResult, Error> {
@@ -282,18 +343,23 @@ impl Installer {
             .cloned()
             .partition(|name| name.starts_with("cask:"));
 
-        let mut installed = 0usize;
+        let mut result = ExecuteResult::default();
 
         if !formulas.is_empty() {
             let plan = self.plan(&formulas).await?;
-            installed += self.execute(plan, link).await?.installed;
+            let executed = self.execute(plan, link).await?;
+            result.installed += executed.installed;
+            result.notices.extend(executed.notices);
+            result
+                .post_install_failures
+                .extend(executed.post_install_failures);
         }
 
         if !casks.is_empty() {
-            installed += self.install_casks(&casks, link).await?.installed;
+            result.installed += self.install_casks(&casks, link).await?.installed;
         }
 
-        Ok(ExecuteResult { installed })
+        Ok(result)
     }
 
     pub async fn install_casks(
@@ -309,7 +375,10 @@ impl Installer {
             self.install_single_cask(token, link).await?;
             installed += 1;
         }
-        Ok(ExecuteResult { installed })
+        Ok(ExecuteResult {
+            installed,
+            ..Default::default()
+        })
     }
 
     pub fn is_installed(&self, name: &str) -> bool {
@@ -470,6 +539,36 @@ mod test_support {
         } else {
             "arm64_sonoma"
         }
+    }
+    /// Formula JSON for `name` whose bottle is served by the mock at
+    /// `uri`, with `extra` spliced in as more top-level fields.
+    pub fn formula_json_with(
+        uri: &str,
+        name: &str,
+        version: &str,
+        sha: &str,
+        extra: &str,
+    ) -> String {
+        let tag = get_test_bottle_tag();
+        let extra = if extra.is_empty() {
+            String::new()
+        } else {
+            format!("{extra},")
+        };
+        format!(
+            r#"{{
+                "name": "{name}",
+                "versions": {{ "stable": "{version}" }},
+                "dependencies": [],
+                {extra}
+                "bottle": {{ "stable": {{ "files": {{
+                    "{tag}": {{
+                        "url": "{uri}/bottles/{name}-{version}.{tag}.bottle.tar.gz",
+                        "sha256": "{sha}"
+                    }}
+                }} }} }}
+            }}"#
+        )
     }
 }
 
@@ -771,41 +870,11 @@ mod tests {
         assert!(root.join("cellar/goodpkg/1.0.0").exists());
     }
 
-    /// An installer backed by a mock API serving `name` 1.0.0 as `bottle`.
-    async fn installer_for_bottle(
+    /// An installer backed by a mock API with nothing mounted yet.
+    pub(super) async fn bare_installer(
         mock_server: &MockServer,
         tmp: &TempDir,
-        name: &str,
-        bottle: Vec<u8>,
     ) -> (Installer, std::path::PathBuf, std::path::PathBuf) {
-        let tag = get_test_bottle_tag();
-        let formula_json = format!(
-            r#"{{
-                "name": "{name}",
-                "versions": {{ "stable": "1.0.0" }},
-                "dependencies": [],
-                "bottle": {{ "stable": {{ "files": {{
-                    "{tag}": {{
-                        "url": "{uri}/bottles/{name}-1.0.0.{tag}.bottle.tar.gz",
-                        "sha256": "{sha}"
-                    }}
-                }} }} }}
-            }}"#,
-            uri = mock_server.uri(),
-            sha = sha256_hex(&bottle),
-        );
-
-        Mock::given(method("GET"))
-            .and(path(format!("/formula/{name}.json")))
-            .respond_with(ResponseTemplate::new(200).set_body_string(&formula_json))
-            .mount(mock_server)
-            .await;
-        Mock::given(method("GET"))
-            .and(path(format!("/bottles/{name}-1.0.0.{tag}.bottle.tar.gz")))
-            .respond_with(ResponseTemplate::new(200).set_body_bytes(bottle))
-            .mount(mock_server)
-            .await;
-
         let root = tmp.path().join("zerobrew");
         let prefix = tmp.path().join("homebrew");
         fs::create_dir_all(root.join("db")).unwrap();
@@ -821,6 +890,182 @@ mod tests {
             root.join("locks"),
         );
         (installer, root, prefix)
+    }
+
+    /// An installer backed by a mock API serving `name` 1.0.0 as `bottle`.
+    async fn installer_for_bottle(
+        mock_server: &MockServer,
+        tmp: &TempDir,
+        name: &str,
+        bottle: Vec<u8>,
+    ) -> (Installer, std::path::PathBuf, std::path::PathBuf) {
+        installer_for_bottle_with(mock_server, tmp, name, bottle, "").await
+    }
+
+    /// [`installer_for_bottle`] with extra top-level formula JSON fields.
+    async fn installer_for_bottle_with(
+        mock_server: &MockServer,
+        tmp: &TempDir,
+        name: &str,
+        bottle: Vec<u8>,
+        extra_json: &str,
+    ) -> (Installer, std::path::PathBuf, std::path::PathBuf) {
+        let tag = get_test_bottle_tag();
+        let formula_json = formula_json_with(
+            &mock_server.uri(),
+            name,
+            "1.0.0",
+            &sha256_hex(&bottle),
+            extra_json,
+        );
+
+        Mock::given(method("GET"))
+            .and(path(format!("/formula/{name}.json")))
+            .respond_with(ResponseTemplate::new(200).set_body_string(&formula_json))
+            .mount(mock_server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path(format!("/bottles/{name}-1.0.0.{tag}.bottle.tar.gz")))
+            .respond_with(ResponseTemplate::new(200).set_body_bytes(bottle))
+            .mount(mock_server)
+            .await;
+
+        bare_installer(mock_server, tmp).await
+    }
+
+    #[tokio::test]
+    async fn post_install_steps_run_after_the_install_and_report_progress() {
+        let mock_server = MockServer::start().await;
+        let tmp = TempDir::new().unwrap();
+        let bottle = create_bottle_tarball_with_files(
+            "certs",
+            "1.0.0",
+            &[("share/certs/cacert.pem", "MOZILLA\n")],
+        );
+        let steps = r#""post_install_steps": [
+            {"type": "run", "command": {"path": "cp"},
+             "args": ["{{pkgshare}}/cacert.pem", "{{etc}}/cert.pem"]},
+            {"type": "warn", "message": "bundle written for {{formula_name}}"}
+        ]"#;
+        let (mut installer, _root, prefix) =
+            installer_for_bottle_with(&mock_server, &tmp, "certs", bottle, steps).await;
+        fs::create_dir_all(prefix.join("etc")).unwrap();
+
+        let events = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = events.clone();
+        let progress: Arc<crate::progress::ProgressCallback> = Arc::new(Box::new(move |event| {
+            let label = match event {
+                crate::progress::InstallProgress::InstallCompleted { .. } => "installed",
+                crate::progress::InstallProgress::PostInstallStarted { .. } => "post-install",
+                crate::progress::InstallProgress::PostInstallCompleted { .. } => {
+                    "post-install done"
+                }
+                crate::progress::InstallProgress::PostInstallFailed { .. } => "post-install failed",
+                _ => return,
+            };
+            seen.lock().unwrap().push(label);
+        }));
+
+        let plan = installer.plan(&["certs".to_string()]).await.unwrap();
+        let result = installer
+            .execute_with_progress(plan, true, Some(progress))
+            .await
+            .unwrap();
+
+        assert_eq!(result.installed, 1);
+        assert!(result.post_install_failures.is_empty());
+        assert_eq!(
+            result.notices,
+            vec![super::PostInstallNotice {
+                name: "certs".into(),
+                message: "bundle written for certs".into()
+            }]
+        );
+        assert_eq!(
+            fs::read_to_string(prefix.join("etc/cert.pem")).unwrap(),
+            "MOZILLA\n"
+        );
+        assert_eq!(
+            *events.lock().unwrap(),
+            ["installed", "post-install", "post-install done"]
+        );
+    }
+
+    #[tokio::test]
+    async fn a_failed_post_install_leaves_the_package_installed() {
+        let mock_server = MockServer::start().await;
+        let tmp = TempDir::new().unwrap();
+        let bottle = create_bottle_tarball("flaky");
+        let steps = r#""post_install_steps": [
+            {"type": "mkdir_p", "path": {"path": "{{var}}/flaky"}},
+            {"type": "run", "command": {"path": "sh"}, "args": ["-c", "echo nope >&2; exit 7"]},
+            {"type": "mkdir_p", "path": {"path": "{{var}}/never"}}
+        ]"#;
+        let (mut installer, _root, prefix) =
+            installer_for_bottle_with(&mock_server, &tmp, "flaky", bottle, steps).await;
+
+        let result = installer
+            .install(&["flaky".to_string()], true)
+            .await
+            .unwrap();
+
+        assert_eq!(result.installed, 1);
+        assert!(installer.is_installed("flaky"));
+        assert!(prefix.join("bin/flaky").exists(), "the keg is linked");
+        assert!(prefix.join("var/flaky").is_dir());
+        assert!(
+            !prefix.join("var/never").exists(),
+            "steps after the failure do not run"
+        );
+        assert_eq!(result.post_install_failures.len(), 1);
+        match &result.post_install_failures[0] {
+            zb_core::Error::PostInstallFailed {
+                name,
+                step,
+                message,
+            } => {
+                assert_eq!(name, "flaky");
+                assert_eq!(step, "run");
+                assert!(message.contains("nope"), "{message}");
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn an_unsupported_step_is_reported_not_skipped() {
+        let mock_server = MockServer::start().await;
+        let tmp = TempDir::new().unwrap();
+        let bottle = create_bottle_tarball("newfangled");
+        let steps = r#""post_install_steps": [{"type": "bootstrap_pypy", "abi_version": "3.11"}]"#;
+        let (mut installer, _root, _prefix) =
+            installer_for_bottle_with(&mock_server, &tmp, "newfangled", bottle, steps).await;
+
+        let result = installer
+            .install(&["newfangled".to_string()], true)
+            .await
+            .unwrap();
+
+        assert_eq!(result.installed, 1);
+        assert!(installer.is_installed("newfangled"));
+        let failure = result.post_install_failures[0].to_string();
+        assert!(failure.contains("bootstrap_pypy"), "{failure}");
+        assert!(failure.contains("not supported"), "{failure}");
+    }
+
+    #[tokio::test]
+    async fn formulae_without_steps_report_nothing() {
+        let mock_server = MockServer::start().await;
+        let tmp = TempDir::new().unwrap();
+        let bottle = create_bottle_tarball("plain");
+        let (mut installer, _root, _prefix) =
+            installer_for_bottle(&mock_server, &tmp, "plain", bottle).await;
+        let result = installer
+            .install(&["plain".to_string()], true)
+            .await
+            .unwrap();
+        assert!(result.notices.is_empty());
+        assert!(result.post_install_failures.is_empty());
     }
 
     #[tokio::test]

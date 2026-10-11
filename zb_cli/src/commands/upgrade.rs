@@ -162,11 +162,35 @@ pub async fn execute(
                     pb.finish();
                 }
             }
+            InstallProgress::PostInstallStarted { name } => {
+                let pb = multi_clone.add(ProgressBar::new_spinner());
+                pb.set_style(spinner_style_clone.clone());
+                pb.set_prefix(name.clone());
+                pb.set_message("running post-install...");
+                pb.enable_steady_tick(std::time::Duration::from_millis(80));
+                bars.insert(format!("{name} post-install"), pb);
+            }
+            InstallProgress::PostInstallCompleted { name } => {
+                if let Some(pb) = bars.get(&format!("{name} post-install")) {
+                    pb.set_style(done_style_clone.clone());
+                    pb.set_message(format!("{} post-install done", style("✓").green()));
+                    pb.finish();
+                }
+            }
+            InstallProgress::PostInstallFailed { name, .. } => {
+                if let Some(pb) = bars.get(&format!("{name} post-install")) {
+                    pb.set_style(done_style_clone.clone());
+                    pb.set_message(format!("{} post-install failed", style("✗").red()));
+                    pb.finish();
+                }
+            }
         }
     }));
 
     let mut upgraded = 0usize;
     let mut errors: Vec<(String, zb_core::Error)> = Vec::new();
+    let mut notices = Vec::new();
+    let mut post_install_failures = Vec::new();
 
     for pkg in &outdated {
         let name = &pkg.name;
@@ -181,9 +205,11 @@ pub async fn execute(
             )
             .await
         {
-            Ok(()) => {
+            Ok(result) => {
                 ui.step_ok().map_err(ui_error)?;
                 upgraded += 1;
+                notices.extend(result.notices);
+                post_install_failures.extend(result.post_install_failures);
             }
             Err(e) => {
                 ui.step_fail().map_err(ui_error)?;
@@ -216,7 +242,7 @@ pub async fn execute(
             elapsed.as_secs_f64()
         ))
         .map_err(ui_error)?;
-        Ok(())
+        super::install::report_post_install(ui, &notices, post_install_failures)
     } else if !errors.is_empty() {
         Err(errors.remove(0).1)
     } else {
