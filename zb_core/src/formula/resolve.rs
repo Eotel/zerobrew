@@ -141,6 +141,7 @@ mod tests {
             variations: None,
             aliases: Vec::new(),
             oldnames: Vec::new(),
+            post_install_steps: Vec::new(),
         }
     }
 
