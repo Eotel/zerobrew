@@ -1,6 +1,7 @@
 mod cask;
 pub mod homebrew;
 pub mod install;
+pub mod post_install;
 
 pub use homebrew::{
     HomebrewMigrationPackages, HomebrewPackage, categorize_packages, get_homebrew_packages,
@@ -10,3 +11,4 @@ pub use install::doctor::{DiagnosticReport, RepairSummary};
 pub use install::{
     ExecuteResult, InstallPlan, Installer, OutdatedPackage, PlanFailure, create_installer,
 };
+pub use post_install::{PostInstallContext, StepError, StepFailure, run_steps};
