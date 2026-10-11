@@ -193,6 +193,11 @@ pub enum Commands {
         #[arg(long, help = "Do not create symlinks after installation")]
         no_link: bool,
     },
+    /// Run the post-install steps of installed packages again
+    Postinstall {
+        #[arg(required = true, num_args = 1..)]
+        formulas: Vec<String>,
+    },
 }
 
 #[derive(Subcommand)]

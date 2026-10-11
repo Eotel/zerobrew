@@ -89,6 +89,9 @@ async fn run(cli: Cli) -> Result<(), zb_core::Error> {
             )
             .await
         }
+        Commands::Postinstall { formulas } => {
+            commands::postinstall::execute(&mut installer, formulas, &mut ui).await
+        }
         Commands::Reset { yes } => commands::reset::execute(&root, &prefix, yes, &mut ui),
         Commands::Run { formula, args } => {
             commands::run::execute(&mut installer, formula, args).await
