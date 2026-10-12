@@ -1,3 +1,8 @@
+//! Derived from Homebrew's `Library/Homebrew/install_steps.rb` and
+//! `install_steps/formula_actions.rb` (https://github.com/Homebrew/brew).
+//! Copyright (c) 2009-present, Homebrew contributors. BSD 2-Clause License,
+//! see LICENSE-HOMEBREW.
+//!
 //! `configure_clang_system`: tell Homebrew's clang where the macOS SDK is.
 //!
 //! llvm's keg ships a clang that knows nothing about the system it runs on.

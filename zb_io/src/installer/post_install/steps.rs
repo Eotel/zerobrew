@@ -1,3 +1,8 @@
+//! Derived from Homebrew's `Library/Homebrew/install_steps.rb` and
+//! `install_steps/formula_actions.rb` (https://github.com/Homebrew/brew).
+//! Copyright (c) 2009-present, Homebrew contributors. BSD 2-Clause License,
+//! see LICENSE-HOMEBREW.
+//!
 //! What each step does. The behaviour follows Homebrew's
 //! `InstallSteps::Runner`, including its defaults and its quirks, so that a
 //! prefix set up by either tool looks the same.
