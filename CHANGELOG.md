@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `zb postinstall <formula>...` runs the post-install steps of installed packages again, like `brew postinstall`. Run it once for packages installed by earlier releases ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
 
 ### Fixed
+- An unsupported post-install step now says `step type \`configure_php\` is not supported yet` instead of printing serde's list of every step type zerobrew knows ([#449](https://github.com/zerobrewhq/zerobrew/issues/449))
 - A keg entry that is a symlink back to the path it would be linked at, like llvm's `etc/clang -> ../../../../etc/clang`, is no longer followed and reported as conflicting with itself. llvm installed but never linked on Linux because of it. Links into another keg's `opt` at the same relative path, which split formulae use, are skipped too, as Homebrew does ([#188](https://github.com/zerobrewhq/zerobrew/issues/188))
 
 ## [0.4.0] - 2026-10-07

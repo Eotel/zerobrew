@@ -258,9 +258,9 @@ pub(super) fn run_step(
 fn refuse_sudo(sudo: Sudo) -> Result<(), StepError> {
     match sudo {
         Sudo::Never => Ok(()),
-        Sudo::Always | Sudo::IfNeeded => {
-            Err(StepError::Unsupported("the step asks for sudo".to_string()))
-        }
+        Sudo::Always | Sudo::IfNeeded => Err(StepError::Unsupported(
+            "steps that need sudo are not supported".to_string(),
+        )),
     }
 }
 
