@@ -4,25 +4,25 @@
     {
       "label": "ZB",
       "tag": "warm",
-      "width": 1,
-      "speedup": "68x",
-      "time": "9.3s",
+      "width": 4,
+      "speedup": "23x",
+      "time": "27.7s",
       "color": "var(--color-warm)"
     },
     {
       "label": "HB",
       "tag": "warm",
-      "width": 82,
+      "width": 83,
       "speedup": "",
-      "time": "638s",
+      "time": "650s",
       "color": "var(--color-wave)"
     },
     {
       "label": "ZB",
       "tag": "cold",
-      "width": 15,
-      "speedup": "6.6x",
-      "time": "117s",
+      "width": 28,
+      "speedup": "3.6x",
+      "time": "216s",
       "color": "var(--color-cold)"
     },
     {
@@ -30,7 +30,7 @@
       "tag": "cold",
       "width": 100,
       "speedup": "",
-      "time": "776s",
+      "time": "782s",
       "color": "var(--color-wave)"
     }
   ]
