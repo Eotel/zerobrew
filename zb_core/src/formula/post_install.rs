@@ -356,6 +356,39 @@ pub enum StepAction {
     },
 }
 
+/// Every step type the runner knows. A type outside this list is reported
+/// as not supported yet; a type inside it with the wrong fields is a
+/// malformed step, which is a different message.
+const KNOWN_KINDS: &[&str] = &[
+    "mkdir",
+    "mkdir_p",
+    "touch",
+    "move",
+    "move_children",
+    "move_contents",
+    "copy",
+    "remove",
+    "inreplace",
+    "link_dir",
+    "link_children",
+    "symlink",
+    "write",
+    "run",
+    "terminate_process",
+    "change_dylib_id",
+    "warn",
+    "set_permissions",
+    "install_gzipped_executable",
+    "configure_clang_system",
+    "configure_gcc_runtime",
+    "compile_gsettings_schemas",
+    "gio_querymodules",
+    "gdk_pixbuf_query_loaders",
+    "gtk_update_icon_cache",
+    "update_mime_database",
+    "update_desktop_database",
+];
+
 impl StepAction {
     /// Homebrew's name for this step type.
     pub fn kind(&self) -> &str {
@@ -417,18 +450,29 @@ impl<'de> Deserialize<'de> for PostInstallStep {
             return Ok(Self::unsupported("<untyped>", "step has no type"));
         };
         let kind = kind.to_string();
+        if !KNOWN_KINDS.contains(&kind.as_str()) {
+            return Ok(Self::unsupported(
+                kind.clone(),
+                format!("step type `{kind}` is not supported yet"),
+            ));
+        }
         let guards = match value.get("guards") {
             None => Vec::new(),
             Some(raw) => match serde_json::from_value::<Vec<Guard>>(raw.clone()) {
                 Ok(guards) => guards,
-                Err(e) => return Ok(Self::unsupported(kind, format!("bad guard: {e}"))),
+                Err(e) => {
+                    return Ok(Self::unsupported(
+                        kind.clone(),
+                        format!("step `{kind}` has a bad guard: {e}"),
+                    ));
+                }
             },
         };
         let action = match serde_json::from_value::<StepAction>(value) {
             Ok(action) => action,
             Err(e) => StepAction::Unsupported {
+                reason: format!("step `{kind}` has unexpected fields: {e}"),
                 kind,
-                reason: e.to_string(),
             },
         };
         Ok(Self { guards, action })
@@ -551,7 +595,12 @@ mod tests {
     fn unknown_step_type_is_unsupported_not_an_error() {
         let s = step(r#"{"type": "bootstrap_cpython"}"#);
         assert_eq!(s.action.kind(), "bootstrap_cpython");
-        assert!(matches!(s.action, StepAction::Unsupported { .. }));
+        match s.action {
+            StepAction::Unsupported { reason, .. } => {
+                assert_eq!(reason, "step type `bootstrap_cpython` is not supported yet");
+            }
+            other => panic!("expected unsupported, got {other:?}"),
+        }
     }
 
     #[test]
@@ -560,6 +609,10 @@ mod tests {
         match s.action {
             StepAction::Unsupported { kind, reason } => {
                 assert_eq!(kind, "symlink");
+                assert!(
+                    reason.starts_with("step `symlink` has unexpected fields"),
+                    "{reason}"
+                );
                 assert!(reason.contains("target"), "{reason}");
             }
             other => panic!("expected unsupported, got {other:?}"),
@@ -579,7 +632,13 @@ mod tests {
                 "guards": [{"condition": "if_exists", "id": "1"}]}"#,
         );
         match s.action {
-            StepAction::Unsupported { reason, .. } => assert!(reason.contains("no path")),
+            StepAction::Unsupported { reason, .. } => {
+                assert!(
+                    reason.starts_with("step `mkdir_p` has a bad guard"),
+                    "{reason}"
+                );
+                assert!(reason.contains("no path"), "{reason}");
+            }
             other => panic!("expected unsupported, got {other:?}"),
         }
     }

@@ -58,7 +58,7 @@ pub enum StepError {
 impl fmt::Display for StepError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StepError::Unsupported(reason) => write!(f, "not supported by zerobrew: {reason}"),
+            StepError::Unsupported(reason) => f.write_str(reason),
             StepError::Failed(message) => f.write_str(message),
         }
     }
@@ -270,7 +270,7 @@ mod tests {
                 guards: vec![],
                 action: StepAction::Unsupported {
                     kind: "bootstrap_pypy".into(),
-                    reason: "unknown".into(),
+                    reason: "step type `bootstrap_pypy` is not supported yet".into(),
                 },
             },
         ];
@@ -280,7 +280,7 @@ mod tests {
         assert!(matches!(failure.error, StepError::Unsupported(_)));
         assert_eq!(
             failure.to_string(),
-            "step 2 (bootstrap_pypy): not supported by zerobrew: unknown"
+            "step 2 (bootstrap_pypy): step type `bootstrap_pypy` is not supported yet"
         );
     }
 
