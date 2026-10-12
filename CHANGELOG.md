@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CA bundle ca-certificates builds in post-install is cached under `cache/post-install`, keyed on the Mozilla bundle and the system trust store, so reinstalling it or anything that depends on it copies the bundle instead of spending five seconds rebuilding it. The bytes are the script's own ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
 - `zb postinstall <formula>...` runs the post-install steps of installed packages again, like `brew postinstall`. Run it once for packages installed by earlier releases ([#438](https://github.com/zerobrewhq/zerobrew/issues/438))
 
+### Fixed
+- A keg entry that is a symlink back to the path it would be linked at, like llvm's `etc/clang -> ../../../../etc/clang`, is no longer followed and reported as conflicting with itself. llvm installed but never linked on Linux because of it. Links into another keg's `opt` at the same relative path, which split formulae use, are skipped too, as Homebrew does ([#188](https://github.com/zerobrewhq/zerobrew/issues/188))
+
 ## [0.4.0] - 2026-10-07
 
 ### Added
