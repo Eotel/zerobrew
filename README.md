@@ -260,4 +260,4 @@ doing so.
 
 - **Status:** Experimental, but quite useful. I ([@cachebag](https://github.com/cachebag)) daily drive it myself.
 - **Feedback:** If you hit incompatibilities, please open an issue or PR.
-- **License:** Dual-licensed under [Apache 2.0](./LICENSE-APACHE.md) OR [MIT](./LICENSE-MIT.md), at your choice. The source build shim is derived from Homebrew and is covered by its [BSD 2-Clause license](./LICENSE-HOMEBREW).
+- **License:** Dual-licensed under [Apache 2.0](./LICENSE-APACHE.md) OR [MIT](./LICENSE-MIT.md), at your choice. The source build shim and the post-install runner are derived from Homebrew and are covered by its [BSD 2-Clause license](./LICENSE-HOMEBREW).
