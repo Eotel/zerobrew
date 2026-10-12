@@ -216,6 +216,40 @@ fn keg_name_from_symlink(dst: &Path) -> Option<String> {
     }
 }
 
+/// Homebrew's `Find.prune if resolved_src == dst`: a keg entry that is a
+/// symlink to the very path it would be linked at is nothing to link. llvm
+/// ships `etc/clang -> ../../../../etc/clang` so its config directory lives
+/// in the prefix; following it would find the files already there and
+/// report each as conflicting with itself. The same applies to a link into
+/// another keg's `opt` at the same relative path, which split formulae like
+/// llvm and flang use.
+fn links_to_destination(src: &Path, dst: &Path, top: &str, rel: &str) -> bool {
+    let Some(target) = resolve_link_target(src) else {
+        return false;
+    };
+    let target = normalize_lexically(&target);
+    if target == normalize_lexically(dst) {
+        return true;
+    }
+    if let (Ok(a), Ok(b)) = (fs::canonicalize(&target), fs::canonicalize(dst))
+        && a == b
+    {
+        return true;
+    }
+    let suffix = Path::new(top).join(rel);
+    if !target.ends_with(&suffix) {
+        return false;
+    }
+    let mut above = target.as_path();
+    for _ in 0..suffix.components().count() {
+        above = above.parent().unwrap_or(Path::new(""));
+    }
+    above
+        .parent()
+        .and_then(Path::file_name)
+        .is_some_and(|name| name == "opt")
+}
+
 /// Whether the symlink at `dst` may be silently replaced by a link to `src`.
 ///
 /// Regression guard for #331 (https://github.com/zerobrewhq/zerobrew/issues/331):
@@ -296,6 +330,10 @@ impl Linker {
             } else {
                 format!("{rel}/{}", file_name.to_string_lossy())
             };
+
+            if links_to_destination(&src_path, &dst_path, top, &entry_rel) {
+                continue;
+            }
 
             // Use src_path.is_dir() which follows symlinks, so that keg entries
             // like `man -> ../gnuman` (symlinks to directories) are treated as dirs.
@@ -468,6 +506,10 @@ impl Linker {
             } else {
                 format!("{rel}/{}", file_name.to_string_lossy())
             };
+
+            if links_to_destination(&src_path, &dst_path, top, &entry_rel) {
+                continue;
+            }
 
             // Use src_path.is_dir() which follows symlinks, so that keg entries
             // like `man -> ../gnuman` (symlinks to directories) can be merged
@@ -813,6 +855,57 @@ mod tests {
         let linker = Linker::new(tmp.path()).unwrap();
         linker.link_keg(&keg).unwrap();
         assert!(tmp.path().join("bin/foo").exists());
+    }
+
+    /// llvm's keg has `etc/clang -> ../../../../etc/clang`, pointing at the
+    /// prefix directory its bottle config was copied into. Following it
+    /// used to report `etc/clang/.keepme` as conflicting with itself. See
+    /// https://github.com/zerobrewhq/zerobrew/issues/188
+    #[test]
+    fn skips_a_keg_entry_that_links_back_to_its_destination() {
+        let tmp = TempDir::new().unwrap();
+        let prefix = tmp.path();
+        let keg = prefix.join("cellar/llvm/23.1.2");
+        fs::create_dir_all(keg.join("etc")).unwrap();
+        fs::create_dir_all(prefix.join("etc/clang")).unwrap();
+        fs::write(prefix.join("etc/clang/.keepme"), b"").unwrap();
+        std::os::unix::fs::symlink("../../../../etc/clang", keg.join("etc/clang")).unwrap();
+
+        let linker = Linker::new(prefix).unwrap();
+        linker.check_conflicts(&keg).unwrap();
+        let linked = linker.link_keg(&keg).unwrap();
+
+        assert!(
+            linked
+                .iter()
+                .all(|f| !f.link_path.starts_with(prefix.join("etc/clang")))
+        );
+        assert!(prefix.join("etc/clang").is_dir() && !prefix.join("etc/clang").is_symlink());
+        assert!(prefix.join("etc/clang/.keepme").is_file());
+        let entries: Vec<_> = fs::read_dir(prefix.join("etc/clang"))
+            .unwrap()
+            .flatten()
+            .collect();
+        assert_eq!(entries.len(), 1);
+    }
+
+    /// Split formulae link into a sibling keg's `opt` at the same relative
+    /// path; Homebrew leaves those alone and so do we.
+    #[test]
+    fn skips_links_into_another_keg_at_the_same_path() {
+        let tmp = TempDir::new().unwrap();
+        let prefix = tmp.path();
+        let keg = prefix.join("cellar/llvm/23.1.2");
+        fs::create_dir_all(keg.join("bin")).unwrap();
+        std::os::unix::fs::symlink(prefix.join("opt/flang/bin/flang"), keg.join("bin/flang"))
+            .unwrap();
+        fs::write(keg.join("bin/clang"), b"clang").unwrap();
+
+        let linker = Linker::new(prefix).unwrap();
+        linker.link_keg(&keg).unwrap();
+
+        assert!(prefix.join("bin/clang").is_symlink());
+        assert!(prefix.join("bin/flang").symlink_metadata().is_err());
     }
 
     #[test]
