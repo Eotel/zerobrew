@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE-MIT.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE-APACHE.md)
 
-<img alt="zerobrew demo" src="./assets/zb-demo.gif" />
+<img alt="zerobrew demo" src="./assets/zb-demo-0.4.0.gif" />
 
 <p><strong>zerobrew brings uv-style architecture to Homebrew packages on macOS and Linux.</strong></p>
 
