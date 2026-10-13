@@ -673,6 +673,12 @@ fn baseline_zb() -> Option<PathBuf> {
 /// tool's own work shows in the numbers, too big for the byte comparison.
 const TIMING_ONLY: &[&str] = &["node", "python@3.14"];
 
+/// Formulae left out of the cold `ZB_TIMING_MIN_SPEEDUP` gate. Most of a
+/// cold ca-certificates install is its post-install building the
+/// certificate bundle, which both tools run, so the ratio measures that
+/// step rather than the install.
+const COLD_GATE_EXEMPT: &[&str] = &["ca-certificates"];
+
 /// How many times each zb build installs each formula; the fastest run of
 /// each kind counts, since the slow ones are the network.
 const ZB_TIMING_ROUNDS: usize = 3;
@@ -963,10 +969,15 @@ fn install_timings() {
 
     let mut slow = Vec::new();
     if let Some(min) = ratio_from_env("ZB_TIMING_MIN_SPEEDUP") {
-        slow.extend(timings.iter().filter_map(|t| {
-            let speedup = t.cold_speedup().filter(|s| *s < min)?;
-            Some(format!("{} cold: {speedup:.1}x (need {min}x)", t.formula))
-        }));
+        slow.extend(
+            timings
+                .iter()
+                .filter(|t| !COLD_GATE_EXEMPT.contains(&t.formula))
+                .filter_map(|t| {
+                    let speedup = t.cold_speedup().filter(|s| *s < min)?;
+                    Some(format!("{} cold: {speedup:.1}x (need {min}x)", t.formula))
+                }),
+        );
     }
     if let Some(min) = ratio_from_env("ZB_TIMING_MIN_WARM_SPEEDUP") {
         slow.extend(timings.iter().filter_map(|t| {
