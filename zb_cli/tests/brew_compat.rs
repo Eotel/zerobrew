@@ -5,11 +5,29 @@ use std::os::unix::{
     fs::{PermissionsExt, symlink},
     process::ExitStatusExt,
 };
-use std::process::Command;
+use std::process::{Command, Output};
+use std::sync::{PoisonError, RwLock};
+
+/// A child forked by another test thread keeps any open write descriptor until
+/// it execs, and executing that file in the meantime fails with ETXTBSY. Writes
+/// to executables take this lock exclusively and spawns share it.
+static EXEC: RwLock<()> = RwLock::new(());
+
+fn write_executables<T>(write: impl FnOnce() -> T) -> T {
+    let _guard = EXEC.write().unwrap_or_else(PoisonError::into_inner);
+    write()
+}
+
+fn run(command: &mut Command) -> Output {
+    let _guard = EXEC.read().unwrap_or_else(PoisonError::into_inner);
+    command.output().unwrap()
+}
 
 fn entrypoint() -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    fs::copy(env!("CARGO_BIN_EXE_zb-brew"), dir.path().join("zb-brew")).unwrap();
+    write_executables(|| {
+        fs::copy(env!("CARGO_BIN_EXE_zb-brew"), dir.path().join("zb-brew")).unwrap()
+    });
     symlink("zb-brew", dir.path().join("brew")).unwrap();
     dir
 }
@@ -18,26 +36,24 @@ fn entrypoint() -> tempfile::TempDir {
 fn forwards_to_adjacent_zb_and_preserves_arguments_status_and_signal() {
     let dir = entrypoint();
     let zb = dir.path().join("zb");
-    fs::write(&zb, "#!/bin/sh\nprintf '%s\\n' \"$@\"\nif [ \"${TEST_ZB_SIGNAL:-}\" = yes ]; then kill -TERM $$; fi\nexit \"${TEST_ZB_EXIT:-0}\"\n").unwrap();
+    write_executables(|| {
+        fs::write(&zb, "#!/bin/sh\nprintf '%s\\n' \"$@\"\nif [ \"${TEST_ZB_SIGNAL:-}\" = yes ]; then kill -TERM $$; fi\nexit \"${TEST_ZB_EXIT:-0}\"\n").unwrap()
+    });
     fs::set_permissions(&zb, fs::Permissions::from_mode(0o755)).unwrap();
     let brew = dir.path().join("brew");
-    let output = Command::new(&brew)
+    let output = run(Command::new(&brew)
         .env("PATH", "")
         .env("TEST_ZB_EXIT", "17")
-        .args(["install", "a b", "c", "--no-link"])
-        .output()
-        .unwrap();
+        .args(["install", "a b", "c", "--no-link"]));
     assert_eq!(output.status.code(), Some(17));
     assert_eq!(output.stdout, b"install\na b\nc\n--no-link\n");
-    let output = Command::new(&brew).args(["cleanup"]).output().unwrap();
+    let output = run(Command::new(&brew).args(["cleanup"]));
     assert!(output.status.success());
     assert_eq!(output.stdout, b"gc\n");
     assert!(String::from_utf8_lossy(&output.stderr).contains("only unreferenced store entries"));
-    let output = Command::new(&brew)
+    let output = run(Command::new(&brew)
         .env("TEST_ZB_SIGNAL", "yes")
-        .args(["list"])
-        .output()
-        .unwrap();
+        .args(["list"]));
     assert_eq!(output.status.signal(), Some(15));
 }
 
@@ -52,25 +68,16 @@ fn unsupported_commands_and_flags_fail_before_executing_zb() {
         vec!["list", "--cask"],
         vec!["cleanup", "--prune=all"],
     ] {
-        let output = Command::new(dir.path().join("brew"))
-            .args(args)
-            .output()
-            .unwrap();
+        let output = run(Command::new(dir.path().join("brew")).args(args));
         assert_eq!(output.status.code(), Some(2));
         assert!(!String::from_utf8_lossy(&output.stderr).contains("cannot execute adjacent zb"));
     }
     for args in [vec!["--help"], vec!["install", "--help"], vec!["--version"]] {
-        let output = Command::new(dir.path().join("brew"))
-            .args(args)
-            .output()
-            .unwrap();
+        let output = run(Command::new(dir.path().join("brew")).args(args));
         assert!(output.status.success());
         assert!(String::from_utf8_lossy(&output.stdout).contains("zerobrew"));
     }
-    let output = Command::new(dir.path().join("brew"))
-        .args(["list"])
-        .output()
-        .unwrap();
+    let output = run(Command::new(dir.path().join("brew")).args(["list"]));
     assert_eq!(output.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&output.stderr).contains("reinstall zerobrew"));
 }
@@ -78,21 +85,16 @@ fn unsupported_commands_and_flags_fail_before_executing_zb() {
 #[test]
 fn removal_does_not_initialize_zerobrew_or_need_the_companion() {
     let dir = tempfile::tempdir().unwrap();
-    fs::copy(env!("CARGO_BIN_EXE_zb"), dir.path().join("zb")).unwrap();
+    write_executables(|| fs::copy(env!("CARGO_BIN_EXE_zb"), dir.path().join("zb")).unwrap());
     let root = dir.path().join("unused-root");
     symlink("zb-brew", dir.path().join("brew")).unwrap();
-    let output = Command::new(dir.path().join("zb"))
+    let output = run(Command::new(dir.path().join("zb"))
         .env("ZEROBREW_ROOT", &root)
-        .args(["install-alias", "brew", "--remove"])
-        .output()
-        .unwrap();
+        .args(["install-alias", "brew", "--remove"]));
     assert!(output.status.success(), "{:?}", output);
     assert!(!root.exists());
     assert!(fs::symlink_metadata(dir.path().join("brew")).is_err());
-    let output = Command::new(dir.path().join("zb"))
-        .args(["install-alias", "other"])
-        .output()
-        .unwrap();
+    let output = run(Command::new(dir.path().join("zb")).args(["install-alias", "other"]));
     assert_eq!(output.status.code(), Some(2));
 }
 
@@ -101,16 +103,14 @@ fn migrate_refuses_the_compatibility_entrypoint_before_installing() {
     let dir = entrypoint();
     let root = dir.path().join("root");
     let prefix = dir.path().join("prefix");
-    let output = Command::new(env!("CARGO_BIN_EXE_zb"))
+    let output = run(Command::new(env!("CARGO_BIN_EXE_zb"))
         .env("HOME", dir.path())
         .env("SHELL", "/bin/sh")
         .env_remove("ZDOTDIR")
         .env("PATH", dir.path())
         .env("ZEROBREW_ROOT", &root)
         .env("ZEROBREW_PREFIX", &prefix)
-        .args(["--auto-init", "migrate", "--yes"])
-        .output()
-        .unwrap();
+        .args(["--auto-init", "migrate", "--yes"]));
     assert_eq!(output.status.code(), Some(1));
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("not real Homebrew"),
@@ -133,14 +133,16 @@ fn installer_keeps_brew_opt_in_for_explicit_and_release_binaries() {
             fs::create_dir(&tools).unwrap();
             let log = dir.path().join("calls");
             let zb = sources.join("zb");
-            fs::write(&zb, "#!/bin/sh\nif [ \"$1\" = --version ]; then echo zerobrew-test; exit 0; fi\nprintf '%s\\n' \"$*\" >> \"$TEST_INSTALL_LOG\"\n").unwrap();
-            fs::set_permissions(&zb, fs::Permissions::from_mode(0o755)).unwrap();
-            for name in ["zbx", "zb-brew"] {
-                fs::copy(&zb, sources.join(name)).unwrap();
-            }
             let curl = tools.join("curl");
-            fs::write(&curl, "#!/bin/sh\nwhile [ $# -gt 0 ]; do\n  if [ \"$1\" = -o ]; then destination=$2; shift; fi\n  shift\ndone\n/bin/cp \"$TEST_INSTALL_SOURCES/${destination##*/}\" \"$destination\"\n").unwrap();
-            fs::set_permissions(&curl, fs::Permissions::from_mode(0o755)).unwrap();
+            write_executables(|| {
+                fs::write(&zb, "#!/bin/sh\nif [ \"$1\" = --version ]; then echo zerobrew-test; exit 0; fi\nprintf '%s\\n' \"$*\" >> \"$TEST_INSTALL_LOG\"\n").unwrap();
+                fs::set_permissions(&zb, fs::Permissions::from_mode(0o755)).unwrap();
+                for name in ["zbx", "zb-brew"] {
+                    fs::copy(&zb, sources.join(name)).unwrap();
+                }
+                fs::write(&curl, "#!/bin/sh\nwhile [ $# -gt 0 ]; do\n  if [ \"$1\" = -o ]; then destination=$2; shift; fi\n  shift\ndone\n/bin/cp \"$TEST_INSTALL_SOURCES/${destination##*/}\" \"$destination\"\n").unwrap();
+                fs::set_permissions(&curl, fs::Permissions::from_mode(0o755)).unwrap();
+            });
             let mut command = Command::new("/bin/bash");
             command
                 .arg(&installer)
@@ -161,7 +163,7 @@ fn installer_keeps_brew_opt_in_for_explicit_and_release_binaries() {
                     .arg(sources.join("zbx"))
                     .arg(sources.join("zb-brew"));
             }
-            let output = command.output().unwrap();
+            let output = run(&mut command);
             assert!(
                 output.status.success(),
                 "release={release}, enable={enable}: {:?}",
