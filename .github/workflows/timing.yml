@@ -41,10 +41,14 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
 
+      # Pull requests can only restore main's cache, and main only saves it
+      # from the nightly run. Save it even when the nightly's gates fail, or
+      # every pull request rebuilds every dependency.
       - name: cache rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: macos-latest-${{ matrix.rust }}-release
+          cache-on-failure: true
 
       - name: homebrew version
         run: brew --version
