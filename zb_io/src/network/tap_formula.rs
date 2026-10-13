@@ -521,6 +521,7 @@ fn parse_source_url(source: &str) -> ParsedSourceUrl {
             checksum: Some(checksum),
             tag: None,
             revision: None,
+            using: None,
         }),
         (Some(_), None) => ParsedSourceUrl::PresentMissingChecksum,
         _ => ParsedSourceUrl::NotPresent,
