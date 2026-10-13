@@ -61,10 +61,12 @@ jobs:
           chmod +x /tmp/zb-release
           /tmp/zb-release --version
 
-      # Gated on the nightly run only; pull requests report.
+      # Gated on the nightly run only; pull requests report. Homebrew's times
+      # don't change with a pull request, so only the nightly measures them.
       - name: time installs
         env:
           ZB_PARITY_REQUIRE_BREW: "1"
+          ZB_TIMING_SKIP_BREW: ${{ github.event_name == 'pull_request' && '1' || '' }}
           ZB_TIMING_BASELINE: /tmp/zb-release
           ZB_TIMING_MIN_SPEEDUP: ${{ github.event_name == 'schedule' && '1.5' || '' }}
           ZB_TIMING_MIN_WARM_SPEEDUP: ${{ github.event_name == 'schedule' && '3' || '' }}
@@ -88,7 +90,7 @@ jobs:
             echo
             cat /tmp/zb-timing.md
             echo
-            echo "_${SHA:0:7}, macos-latest. Cold: nothing cached. Warm: uninstalled, downloads cached. Each zb build 3 rounds, fastest counts; release is the newest GitHub release._"
+            echo "_${SHA:0:7}, macos-latest. Cold: nothing cached. Warm: uninstalled, downloads cached. Each zb build 3 rounds, fastest counts; release is the newest GitHub release. Homebrew is timed in the nightly run._"
           } > /tmp/zb-timing-comment.md
           existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -1)
