@@ -70,7 +70,11 @@ jobs:
           ZB_TIMING_BASELINE: /tmp/zb-release
           ZB_TIMING_MIN_SPEEDUP: ${{ github.event_name == 'schedule' && '1.5' || '' }}
           ZB_TIMING_MIN_WARM_SPEEDUP: ${{ github.event_name == 'schedule' && '3' || '' }}
-          ZB_TIMING_MAX_REGRESSION: ${{ github.event_name == 'schedule' && '1.2' || '' }}
+          # Off while the baseline is 0.4.0, which doesn't run post-install:
+          # against it, node, python and ca-certificates are slower by design.
+          # After the next release, set back to
+          # `${{ github.event_name == 'schedule' && '1.2' || '' }}`.
+          ZB_TIMING_MAX_REGRESSION: ""
           ZB_TIMING_TABLE: /tmp/zb-timing.md
         run: cargo test --release --package zb_cli --features parity --test parity -- --nocapture install_timings
 
