@@ -693,19 +693,22 @@ impl ColdWarm {
 
 struct Timing {
     formula: &'static str,
-    brew: ColdWarm,
+    /// Homebrew's times, unless `ZB_TIMING_SKIP_BREW` is set.
+    brew: Option<ColdWarm>,
     zb: ColdWarm,
     /// The last release's times, when a baseline was given.
     baseline: Option<ColdWarm>,
 }
 
 impl Timing {
-    fn cold_speedup(&self) -> f64 {
-        self.brew.cold.as_secs_f64() / self.zb.cold.as_secs_f64()
+    fn cold_speedup(&self) -> Option<f64> {
+        self.brew
+            .map(|brew| brew.cold.as_secs_f64() / self.zb.cold.as_secs_f64())
     }
 
-    fn warm_speedup(&self) -> f64 {
-        self.brew.warm.as_secs_f64() / self.zb.warm.as_secs_f64()
+    fn warm_speedup(&self) -> Option<f64> {
+        self.brew
+            .map(|brew| brew.warm.as_secs_f64() / self.zb.warm.as_secs_f64())
     }
 
     /// Current cold plus warm over the last release's: above 1 means slower.
@@ -802,43 +805,66 @@ fn time_zb(bin: Option<&Path>, formula: &str) -> ColdWarm {
 }
 
 fn timing_table(timings: &[Timing]) -> String {
+    let with_brew = timings.iter().any(|t| t.brew.is_some());
     let with_baseline = timings.iter().any(|t| t.baseline.is_some());
-    let mut table = String::from(
-        "| formula | homebrew cold | zerobrew cold | speedup | homebrew warm | zerobrew warm | speedup |",
+    let secs = |d: Duration| format!("{:.2}s", d.as_secs_f64());
+    let speedup = |ratio: Option<f64>| ratio.map_or("-".to_string(), |r| format!("{r:.1}x"));
+
+    let mut header = vec!["formula"];
+    if with_brew {
+        header.extend([
+            "homebrew cold",
+            "zerobrew cold",
+            "speedup",
+            "homebrew warm",
+            "zerobrew warm",
+            "speedup",
+        ]);
+    } else {
+        header.extend(["zerobrew cold", "zerobrew warm"]);
+    }
+    if with_baseline {
+        header.extend(["release cold", "release warm", "vs release"]);
+    }
+
+    let mut rows = vec![header.iter().map(|h| h.to_string()).collect::<Vec<_>>()];
+    rows.push(
+        std::iter::once("---".to_string())
+            .chain(std::iter::repeat_n("---:".to_string(), header.len() - 1))
+            .collect(),
     );
-    if with_baseline {
-        table.push_str(" release cold | release warm | vs release |");
-    }
-    table.push_str("\n|---|---:|---:|---:|---:|---:|---:|");
-    if with_baseline {
-        table.push_str("---:|---:|---:|");
-    }
-    table.push('\n');
     for t in timings {
-        table.push_str(&format!(
-            "| {} | {:.2}s | {:.2}s | {:.1}x | {:.2}s | {:.2}s | {:.1}x |",
-            t.formula,
-            t.brew.cold.as_secs_f64(),
-            t.zb.cold.as_secs_f64(),
-            t.cold_speedup(),
-            t.brew.warm.as_secs_f64(),
-            t.zb.warm.as_secs_f64(),
-            t.warm_speedup(),
-        ));
+        let mut row = vec![t.formula.to_string()];
+        if with_brew {
+            let brew = |pick: fn(&ColdWarm) -> Duration| {
+                t.brew.as_ref().map_or("-".into(), |b| secs(pick(b)))
+            };
+            row.extend([
+                brew(|b| b.cold),
+                secs(t.zb.cold),
+                speedup(t.cold_speedup()),
+                brew(|b| b.warm),
+                secs(t.zb.warm),
+                speedup(t.warm_speedup()),
+            ]);
+        } else {
+            row.extend([secs(t.zb.cold), secs(t.zb.warm)]);
+        }
         if with_baseline {
             match (t.baseline, t.regression()) {
-                (Some(baseline), Some(ratio)) => table.push_str(&format!(
-                    " {:.2}s | {:.2}s | {:+.0}% |",
-                    baseline.cold.as_secs_f64(),
-                    baseline.warm.as_secs_f64(),
-                    (ratio - 1.0) * 100.0
-                )),
-                _ => table.push_str(" - | - | - |"),
+                (Some(baseline), Some(ratio)) => row.extend([
+                    secs(baseline.cold),
+                    secs(baseline.warm),
+                    format!("{:+.0}%", (ratio - 1.0) * 100.0),
+                ]),
+                _ => row.extend(["-".into(), "-".into(), "-".into()]),
             }
         }
-        table.push('\n');
+        rows.push(row);
     }
-    table
+    rows.iter()
+        .map(|row| format!("| {} |\n", row.join(" | ")))
+        .collect()
 }
 
 /// A ratio read from the environment; unset or empty means no gate.
@@ -864,12 +890,17 @@ fn ratio_from_env(name: &str) -> Option<f64> {
 /// and warm, on any formula; `ZB_TIMING_MAX_REGRESSION` is the most zb may
 /// be slower than the last release over all formulae, cold and warm
 /// together. See https://github.com/zerobrewhq/zerobrew/issues/422
+///
+/// `ZB_TIMING_SKIP_BREW` leaves Homebrew out, along with the gates against
+/// it. Its times don't depend on the change under test and are most of the
+/// run, so pull requests compare against the last release only.
 #[test]
 fn install_timings() {
     let Some(brew) = Brew::find() else {
         return;
     };
-    if std::env::var_os("ZB_PARITY_BREW").is_none() {
+    let time_homebrew = std::env::var("ZB_TIMING_SKIP_BREW").map_or(true, |v| v.is_empty());
+    if time_homebrew && std::env::var_os("ZB_PARITY_BREW").is_none() {
         assert_success(&brew.run(&["update", "--quiet"]), "brew update");
     }
     let release = baseline_zb();
@@ -883,7 +914,7 @@ fn install_timings() {
 
     let mut timings = Vec::new();
     for formula in formulas {
-        let brew_times = time_brew(&brew, formula);
+        let brew_times = time_homebrew.then(|| time_brew(&brew, formula));
 
         // Rounds alternate which build goes first, so neither always gets
         // the warmer CDN edge.
@@ -932,20 +963,16 @@ fn install_timings() {
 
     let mut slow = Vec::new();
     if let Some(min) = ratio_from_env("ZB_TIMING_MIN_SPEEDUP") {
-        slow.extend(
-            timings
-                .iter()
-                .filter(|t| t.cold_speedup() < min)
-                .map(|t| format!("{} cold: {:.1}x (need {min}x)", t.formula, t.cold_speedup())),
-        );
+        slow.extend(timings.iter().filter_map(|t| {
+            let speedup = t.cold_speedup().filter(|s| *s < min)?;
+            Some(format!("{} cold: {speedup:.1}x (need {min}x)", t.formula))
+        }));
     }
     if let Some(min) = ratio_from_env("ZB_TIMING_MIN_WARM_SPEEDUP") {
-        slow.extend(
-            timings
-                .iter()
-                .filter(|t| t.warm_speedup() < min)
-                .map(|t| format!("{} warm: {:.1}x (need {min}x)", t.formula, t.warm_speedup())),
-        );
+        slow.extend(timings.iter().filter_map(|t| {
+            let speedup = t.warm_speedup().filter(|s| *s < min)?;
+            Some(format!("{} warm: {speedup:.1}x (need {min}x)", t.formula))
+        }));
     }
     assert!(
         slow.is_empty(),
