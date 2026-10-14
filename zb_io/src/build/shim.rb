@@ -113,6 +113,24 @@ module Kernel
     $stderr.puts "Error: #{message}"
     exit 1
   end
+
+  # Homebrew Utils::Shell.with_env (utils/shell.rb), exposed as Kernel#with_env
+  # (extend/kernel.rb). Snapshot the named keys, yield, then always restore.
+  # A nil value unsets the variable for the block. Not thread-safe, matching
+  # Homebrew; each formula build runs in its own single-threaded process.
+  def with_env(hash)
+    old_values = {}
+    begin
+      hash.each do |key, value|
+        key = key.to_s
+        old_values[key] = ENV.delete(key)
+        ENV[key] = value&.to_s
+      end
+      yield
+    ensure
+      ENV.update(old_values)
+    end
+  end
 end
 
 class FormulaVersion < String

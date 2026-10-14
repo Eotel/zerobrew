@@ -503,4 +503,152 @@ end
 
         assert!(err.to_string().contains("checksum mismatch"));
     }
+
+    #[tokio::test]
+    async fn run_build_with_env_applies_symbol_key_and_pathname_then_restores() {
+        let Some(ruby) = find_ruby().await.ok() else {
+            return;
+        };
+
+        let tmp = tempfile::tempdir().unwrap();
+        let source_root = tmp.path().join("source");
+        std::fs::create_dir_all(&source_root).unwrap();
+
+        let formula = r#"
+class Foo < Formula
+  def install
+    before = ENV["HOME"]
+    seen = with_env(HOME: buildpath) { ENV["HOME"] }
+    raise "HOME not set from Pathname" unless seen == buildpath.to_s
+    raise "HOME not restored" unless ENV["HOME"] == before
+
+    positional = with_env({ "ZB_WITH_ENV_POS" => "from-hash" }) { ENV["ZB_WITH_ENV_POS"] }
+    raise "positional hash not applied" unless positional == "from-hash"
+    raise "positional hash not removed" unless ENV["ZB_WITH_ENV_POS"].nil?
+
+    File.write(prefix + "ok", "ok")
+  end
+end
+"#;
+
+        let prefix = tmp.path().join("prefix");
+        run_shim_formula(&ruby, &source_root, &prefix, formula)
+            .await
+            .unwrap();
+
+        let ok = prefix.join("Cellar").join("foo").join("1.0.0").join("ok");
+        assert_eq!(std::fs::read_to_string(ok).unwrap(), "ok");
+    }
+
+    #[tokio::test]
+    async fn run_build_with_env_unsets_nil_and_restores_after_raise() {
+        let Some(ruby) = find_ruby().await.ok() else {
+            return;
+        };
+
+        let tmp = tempfile::tempdir().unwrap();
+        let source_root = tmp.path().join("source");
+        std::fs::create_dir_all(&source_root).unwrap();
+
+        let formula = r#"
+class Foo < Formula
+  def install
+    ENV["ZB_WITH_ENV_NIL"] = "original"
+    ENV["ZB_WITH_ENV_FALSE"] = "original"
+
+    begin
+      with_env(ZB_WITH_ENV_NIL: nil, ZB_WITH_ENV_FALSE: false) do
+        File.write(prefix + "nil-inside", ENV["ZB_WITH_ENV_NIL"].nil? ? "unset" : "set")
+        File.write(prefix + "false-inside", ENV["ZB_WITH_ENV_FALSE"].to_s)
+        raise "boom"
+      end
+    rescue RuntimeError => e
+      raise "unexpected error" unless e.message == "boom"
+    end
+
+    File.write(prefix + "nil-after", ENV["ZB_WITH_ENV_NIL"].to_s)
+    File.write(prefix + "false-after", ENV["ZB_WITH_ENV_FALSE"].to_s)
+  end
+end
+"#;
+
+        let prefix = tmp.path().join("prefix");
+        run_shim_formula(&ruby, &source_root, &prefix, formula)
+            .await
+            .unwrap();
+
+        let keg = prefix.join("Cellar").join("foo").join("1.0.0");
+        assert_eq!(
+            std::fs::read_to_string(keg.join("nil-inside")).unwrap(),
+            "unset"
+        );
+        assert_eq!(
+            std::fs::read_to_string(keg.join("false-inside")).unwrap(),
+            "false"
+        );
+        assert_eq!(
+            std::fs::read_to_string(keg.join("nil-after")).unwrap(),
+            "original"
+        );
+        assert_eq!(
+            std::fs::read_to_string(keg.join("false-after")).unwrap(),
+            "original"
+        );
+    }
+
+    #[tokio::test]
+    async fn run_build_with_env_restores_scoped_key_and_keeps_other_env_edits() {
+        let Some(ruby) = find_ruby().await.ok() else {
+            return;
+        };
+
+        let tmp = tempfile::tempdir().unwrap();
+        let source_root = tmp.path().join("source");
+        std::fs::create_dir_all(&source_root).unwrap();
+
+        let formula = r#"
+class Foo < Formula
+  def install
+    ENV["ZB_SCOPED"] = "before"
+    ENV["ZB_OTHER"] = "keep"
+
+    with_env(ZB_SCOPED: "temp") do
+      ENV.append("ZB_SCOPED", "more")
+      ENV.append_path("ZB_OTHER", "/opt/zb-extra")
+      File.write(prefix + "scoped-inside", ENV["ZB_SCOPED"])
+      File.write(prefix + "other-inside", ENV["ZB_OTHER"])
+    end
+
+    File.write(prefix + "scoped-after", ENV["ZB_SCOPED"])
+    File.write(prefix + "other-after", ENV["ZB_OTHER"])
+  end
+end
+"#;
+
+        let prefix = tmp.path().join("prefix");
+        run_shim_formula(&ruby, &source_root, &prefix, formula)
+            .await
+            .unwrap();
+
+        let keg = prefix.join("Cellar").join("foo").join("1.0.0");
+        // The scoped key saw the with_env value plus the append...
+        assert_eq!(
+            std::fs::read_to_string(keg.join("scoped-inside")).unwrap(),
+            "temp more"
+        );
+        // ...but ensure restored it to the pre-call value.
+        assert_eq!(
+            std::fs::read_to_string(keg.join("scoped-after")).unwrap(),
+            "before"
+        );
+        // Keys not in the hash keep edits made inside the block.
+        assert_eq!(
+            std::fs::read_to_string(keg.join("other-inside")).unwrap(),
+            "keep:/opt/zb-extra"
+        );
+        assert_eq!(
+            std::fs::read_to_string(keg.join("other-after")).unwrap(),
+            "keep:/opt/zb-extra"
+        );
+    }
 }
