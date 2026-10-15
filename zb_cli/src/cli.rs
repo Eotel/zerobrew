@@ -177,6 +177,15 @@ pub enum Commands {
         )]
         shell: clap_complete::shells::Shell,
     },
+    /// Write the zb man pages into directory
+    Man {
+        #[arg(
+            long,
+            value_name = "DIR",
+            help = "Directory to write man pages into (zb.1, zb-<subcommand>.1)"
+        )]
+        out_dir: PathBuf,
+    },
     /// Run an installed formula as a command
     Run {
         #[arg(help = "Name of the formula to run")]

@@ -246,6 +246,39 @@ zb_init() {
     "$zb_path" init ${init_args[@]+"${init_args[@]}"} || error_exit "Failed to initialize zerobrew"
 }
 
+install_man_page() {
+    local zb_path="$1"
+    local man_dir="${ZEROBREW_MAN_DIR:-$(dirname "$ZEROBREW_BIN")/share/man/man1}"
+    local man_tmp_dir=""
+
+    if ! mkdir -p "$man_dir" 2>/dev/null; then
+        warn "Could not create $man_dir, skipping man page"
+        return 0
+    fi
+
+    if ! man_tmp_dir="$(mktemp -d 2>/dev/null)"; then
+        warn "Could not create temp directory, skipping man pages"
+        return 0
+    fi
+
+    if ! "$zb_path" man --out-dir "$man_tmp_dir" >/dev/null 2>&1 \
+            || [[ ! -f "$man_tmp_dir/zb.1" ]]; then
+        warn "Failed to generate man pages, skipping"
+        return 0
+    fi
+
+    # Remove pages from older installs
+    rm -f "$man_dir/zb.1" "$man_dir"/zb-*.1
+
+    if ! cp -f "$man_tmp_dir"/*.1 "$man_dir/"; then
+        warn "Failed to copy man pages to $man_dir"
+        return 0
+    fi
+
+    rm -rf "$man_tmp_dir"
+    man_tmp_dir=""
+}
+
 finalize_installation() {
     local no_modify="$1"
 
@@ -263,6 +296,9 @@ finalize_installation() {
         PATH="$ZEROBREW_BIN:$ORIGINAL_PATH" "$ZEROBREW_BIN/zb" install-alias brew \
             || error_exit "Failed to enable brew compatibility"
     fi
+
+    install_man_page "$ZEROBREW_BIN/zb"
+
     zb_init "$ZEROBREW_BIN/zb" "$no_modify"
     report_zb_version
 
