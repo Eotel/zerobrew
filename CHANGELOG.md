@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-15
+
 ### Added
 - Formulae's post-install steps now run after installing, the same declarative steps Homebrew 7 publishes in its API: `run`, `symlink`, `copy`, `mkdir_p`, `set_permissions`, `inreplace`, `change_dylib_id` and the rest. ca-certificates builds its cert bundle, openssl@3 links to it, node gets its `npm`, python's venv scripts become writable. A step that fails leaves the package installed and linked, is reported after the summary, and makes the command exit non-zero. Steps that need sudo and a few formula-specific ones (`bootstrap_cpython`, `configure_php`, `init_data_dir`, `configure_gcc_runtime` on Linux) are reported as unsupported rather than skipped ([#438](https://github.com/zerobrewhq/zerobrew/issues/438), [#444](https://github.com/zerobrewhq/zerobrew/pull/444))
 - The CA bundle ca-certificates builds in post-install is cached under `cache/post-install`, keyed on the Mozilla bundle and the system trust store, so reinstalling it or anything that depends on it copies the bundle instead of spending five seconds rebuilding it. The bytes are the script's own ([#438](https://github.com/zerobrewhq/zerobrew/issues/438), [#447](https://github.com/zerobrewhq/zerobrew/pull/447))
 - `zb postinstall <formula>...` runs the post-install steps of installed packages again, like `brew postinstall`. Run it once for packages installed by earlier releases ([#438](https://github.com/zerobrewhq/zerobrew/issues/438), [#444](https://github.com/zerobrewhq/zerobrew/pull/444))
 - An opt-in `brew` command for Homebrew muscle memory. `zb install-alias brew` creates `brew -> zb-brew` beside `zb`, `zb install-alias brew --remove` deletes it, and `install.sh --brew-compat` enables it during installation. It forwards `install`, `uninstall`, `list`, `info`, `outdated`, `upgrade`, `doctor`, `bundle` and `update` to `zb`, and runs `zb gc` for `cleanup`. Other commands and flags such as `search`, `tap` and `--cask` fail with a compatibility error. It refuses to replace an existing `brew`, and `zb migrate` refuses to use it as the Homebrew to migrate from ([#443](https://github.com/zerobrewhq/zerobrew/issues/443), [#455](https://github.com/zerobrewhq/zerobrew/pull/455))
+- Formulae can call `with_env` in source builds, which sets environment variables for the length of a block and restores them afterwards, as Homebrew does ([#442](https://github.com/zerobrewhq/zerobrew/issues/442), [#461](https://github.com/zerobrewhq/zerobrew/pull/461))
 
 ### Changed
 - `--auto-init`, `ZEROBREW_AUTO_INIT` and `zb reset` create the data directories without touching shell configuration. Before, running any command with a throwaway root or prefix rewrote `~/.zshenv` and the like to point at it. Only an explicit `zb init` writes shell configuration now, so answering yes to the first-run prompt no longer adds zerobrew to `PATH` either ([#445](https://github.com/zerobrewhq/zerobrew/issues/445), [#456](https://github.com/zerobrewhq/zerobrew/pull/456))
@@ -20,9 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An unsupported post-install step now says `step type \`configure_php\` is not supported yet` instead of printing serde's list of every step type zerobrew knows ([#449](https://github.com/zerobrewhq/zerobrew/issues/449), [#453](https://github.com/zerobrewhq/zerobrew/pull/453))
 - A keg entry that is a symlink back to the path it would be linked at, like llvm's `etc/clang -> ../../../../etc/clang`, is no longer followed and reported as conflicting with itself. llvm installed but never linked on Linux because of it. Links into another keg's `opt` at the same relative path, which split formulae use, are skipped too, as Homebrew does ([#188](https://github.com/zerobrewhq/zerobrew/issues/188), [#451](https://github.com/zerobrewhq/zerobrew/pull/451))
 - Source downloads declared `using: :nounzip` are staged as the downloaded file instead of failing with `invalid gzip header` reported as store corruption. A source that isn't a gzip, xz, zstd or zip archive now fails with `unsupported archive format`, and a source with a download strategy zerobrew can't fetch, like `:git`, falls back to the bottle or is reported as unsupported ([#442](https://github.com/zerobrewhq/zerobrew/issues/442), [#454](https://github.com/zerobrewhq/zerobrew/pull/454))
+- Relocatable object files (`.o`) in a bottle are no longer handed to the ELF patcher on Linux. Nothing in them needs patching, and C++ objects failed to parse, so installing llvm or rust printed hundreds of `failed to patch ELF` warnings ([#346](https://github.com/zerobrewhq/zerobrew/issues/346), [#459](https://github.com/zerobrewhq/zerobrew/pull/459))
 
 ### Security
 - Update `quinn-proto` to 0.11.19 for five RustSec advisories, and `object` to 0.40, which moves zerobrew's own use of `ruzstd` to 0.9.1 for RUSTSEC-2026-0344. `arwen` still pulls in `ruzstd` 0.8.3 through `object` 0.38, but only through compressed-section reads that zerobrew never makes, so the advisory is ignored in `.cargo/audit.toml` until arwen updates
+- Update `rustls` to 0.23.46 for RUSTSEC-2026-0346, 0347, 0348 and 0349 ([#465](https://github.com/zerobrewhq/zerobrew/pull/465))
 
 ## [0.4.0] - 2026-10-07
 
@@ -206,7 +211,8 @@ To get an idea of the initial features zerobrew supports, take a look at the [RE
 
 See the [full commit history](https://github.com/zerobrewhq/zerobrew/commits/v0.1.1) for more details.
 
-[Unreleased]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/zerobrewhq/zerobrew/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/zerobrewhq/zerobrew/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/zerobrewhq/zerobrew/compare/v0.3.3...v0.3.4
