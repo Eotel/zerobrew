@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Source builds can call `generate_completions_from_executable`, which Homebrew formulae use to write bash, zsh, fish and pwsh completions by running the tool they just built. Same arguments and `shell_parameter_format` table as Homebrew. A run that fails aborts the build and reports its command, and no completion file is left behind ([#468](https://github.com/zerobrewhq/zerobrew/pull/468))
+
 ### Changed
-- The CA bundle ca-certificates builds in post-install is built in process instead of by the formula's script, which runs several hundred `openssl` and `security` processes one at a time. The port follows the script line for line, down to the order bash's glob gives the certificates, and only applies to script versions it was checked against, by hash: the 2026-09-25 and 2026-10-20 scripts, the latter of which drops three roots by public key. Any other version runs as before, with a warning, and the parity harness fails on it so the port gets updated. A test builds the bundle both ways and compares the bytes. A cold install of ca-certificates, or of anything that depends on it, no longer spends about 13 seconds on macOS or 6 on Linux building it. The cache is now keyed on the script as well as the Mozilla bundle and the system trust store, so existing caches rebuild once
-- Post-install steps run with `LC_ALL=C`, so what a step writes does not depend on the user's language settings. ca-certificates' script orders its bundle by a glob, which bash sorts by locale
+- The CA bundle ca-certificates builds in post-install is built in process instead of by the formula's script, which runs several hundred `openssl` and `security` processes one at a time. The port follows the script line for line, down to the order bash's glob gives the certificates, and only applies to script versions it was checked against, by hash: the 2026-09-25 and 2026-10-20 scripts, the latter of which drops three roots by public key. Any other version runs as before, with a warning, and the parity harness fails on it so the port gets updated. A test builds the bundle both ways and compares the bytes. A cold install of ca-certificates, or of anything that depends on it, no longer spends about 13 seconds on macOS or 6 on Linux building it. The cache is now keyed on the script as well as the Mozilla bundle and the system trust store, so existing caches rebuild once ([#469](https://github.com/zerobrewhq/zerobrew/pull/469), [#475](https://github.com/zerobrewhq/zerobrew/pull/475))
+- Post-install steps run with `LC_ALL=C`, so what a step writes does not depend on the user's language settings. ca-certificates' script orders its bundle by a glob, which bash sorts by locale ([#469](https://github.com/zerobrewhq/zerobrew/pull/469))
+
+### Fixed
+- The standalone installer and `zb init` agree on where `zb` lives. The installer put the binaries in `~/.local/bin` while the shell config `zb init` wrote said `~/.zerobrew/bin`, so rerunning the installer after sourcing that config installed a second copy and left the first behind. The installer now exports the directory it chose and `zb init` writes that one, in the config and in the instructions `--no-modify-path` prints ([#473](https://github.com/zerobrewhq/zerobrew/issues/473), [#474](https://github.com/zerobrewhq/zerobrew/pull/474))
+
+### Security
+- Update `zip` to 9.0.5 for RUSTSEC-2026-0367, 0368 and 0369, which let a crafted archive escape its extraction directory through symlinks and keep setuid bits. zerobrew only extracts bottles and sources it has checksummed, but the fix costs nothing
+- Update `rustls-webpki` to 0.103.16 and `webpki-roots` to 1.0.10 for RUSTSEC-2026-0381 and 0382, under which distrusted emSign intermediates could still verify
 
 ## [0.4.1] - 2026-10-15
 
