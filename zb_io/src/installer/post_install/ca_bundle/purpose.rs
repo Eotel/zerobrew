@@ -100,33 +100,34 @@ pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> Result<bool, Undecided
 /// Whether `X509_NAME_cmp` could call `a` and `b` equal although their
 /// bytes differ: the same attributes, each string value the same once
 /// folded the way `x509_name_canon` folds it, in ASCII case and in
-/// surrounding and repeated whitespace. Approximate on purpose, erring
-/// towards "could".
+/// surrounding and repeated whitespace. A value that cannot be read as a
+/// string here (a BMPString, say, which the canonical form converts) is
+/// taken to match. Approximate on purpose, erring towards "could".
 fn names_may_match(a: &X509Name, b: &X509Name) -> bool {
-    let fold = |name: &X509Name| -> Vec<Vec<(String, Vec<u8>)>> {
+    let fold = |name: &X509Name| -> Option<Vec<Vec<(String, String)>>> {
         name.iter_rdn()
             .map(|rdn| {
-                let mut attributes: Vec<(String, Vec<u8>)> = rdn
+                let mut attributes = rdn
                     .iter()
                     .map(|attribute| {
-                        let value = match attribute.as_str() {
-                            Ok(text) => text
-                                .split_whitespace()
-                                .collect::<Vec<_>>()
-                                .join(" ")
-                                .to_ascii_lowercase()
-                                .into_bytes(),
-                            Err(_) => attribute.attr_value().data.to_vec(),
-                        };
-                        (attribute.attr_type().to_id_string(), value)
+                        let text = attribute.as_str().ok()?;
+                        let value = text
+                            .split_whitespace()
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                            .to_ascii_lowercase();
+                        Some((attribute.attr_type().to_id_string(), value))
                     })
-                    .collect();
+                    .collect::<Option<Vec<_>>>()?;
                 attributes.sort();
-                attributes
+                Some(attributes)
             })
             .collect()
     };
-    fold(a) == fold(b)
+    match (fold(a), fold(b)) {
+        (Some(a), Some(b)) => a == b,
+        _ => true,
+    }
 }
 
 #[cfg(test)]
@@ -199,17 +200,26 @@ mod tests {
         assert_ne!(other.subject().to_string(), other.issuer().to_string());
         assert_eq!(is_ssl_server_ca(&other), Ok(false));
 
+        // An issuer whose value is a BMPString: not readable as a string
+        // here, converted by the canonical form there.
+        let pem = std::fs::read(fixture("v1-root-bmp-issuer.pem")).unwrap();
+        let (_, pem) = parse_x509_pem(&pem).unwrap();
+        let bmp = pem.parse_x509().unwrap();
+        assert_eq!(is_ssl_server_ca(&bmp), Err(Undecided));
+
         if let Some(openssl) = script_openssl() {
-            let purpose = Command::new(&openssl)
-                .args(["x509", "-noout", "-purpose", "-in"])
-                .arg(fixture("v1-root-mixed-names.pem"))
-                .output()
-                .unwrap();
-            let purpose = String::from_utf8(purpose.stdout).unwrap();
-            assert!(
-                purpose.contains("SSL server CA : Yes"),
-                "openssl should call the names equal: {purpose}"
-            );
+            for name in ["v1-root-mixed-names.pem", "v1-root-bmp-issuer.pem"] {
+                let purpose = Command::new(&openssl)
+                    .args(["x509", "-noout", "-purpose", "-in"])
+                    .arg(fixture(name))
+                    .output()
+                    .unwrap();
+                let purpose = String::from_utf8(purpose.stdout).unwrap();
+                assert!(
+                    purpose.contains("SSL server CA : Yes"),
+                    "{name}: openssl should call the names equal: {purpose}"
+                );
+            }
         }
     }
 
