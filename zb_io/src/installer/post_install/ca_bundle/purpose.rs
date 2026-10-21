@@ -28,8 +28,13 @@ pub(super) fn fails_checkend(cert: &X509Certificate, now: i64) -> bool {
     !well_encoded || not_after.timestamp() <= now
 }
 
+/// The answer to [`is_ssl_server_ca`] turns on a name comparison this
+/// module does not reproduce; the script has to decide.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct Undecided;
+
 /// Whether `openssl x509 -purpose` prints `SSL server CA : Yes`.
-pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> bool {
+pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> Result<bool, Undecided> {
     // An extension OpenSSL can't decode makes every purpose "No".
     let (Ok(key_usage), Ok(extended), Ok(basic), Ok(netscape)) = (
         cert.key_usage(),
@@ -37,7 +42,7 @@ pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> bool {
         cert.basic_constraints(),
         cert.get_extension_unique(&OID_X509_EXT_CERT_TYPE),
     ) else {
-        return false;
+        return Ok(false);
     };
     let (netscape_any_ca, netscape_ssl_ca) = match netscape.map(X509Extension::parsed_extension) {
         None => (false, false),
@@ -45,7 +50,7 @@ pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> bool {
             kinds.ssl_ca() || kinds.smime_ca() || kinds.object_signing_ca(),
             kinds.ssl_ca(),
         ),
-        Some(_) => return false,
+        Some(_) => return Ok(false),
     };
 
     // ku_reject(KU_KEY_CERT_SIGN): a key usage must allow signing certificates.
@@ -53,7 +58,7 @@ pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> bool {
         .as_ref()
         .is_some_and(|usage| !usage.value.key_cert_sign())
     {
-        return false;
+        return Ok(false);
     }
     // xku_reject(XKU_SSL_SERVER): an extended key usage must include servers.
     if let Some(extended) = &extended {
@@ -63,20 +68,65 @@ pub(super) fn is_ssl_server_ca(cert: &X509Certificate) -> bool {
                 oid == NS_SGC || oid == MS_SGC
             });
         if !server {
-            return false;
+            return Ok(false);
         }
     }
     // check_ca, then check_ssl_ca's extra condition on Netscape-only CAs.
     if let Some(basic) = basic {
-        basic.value.ca
+        Ok(basic.value.ca)
     } else if cert.version().0 == 0 {
-        // OpenSSL takes a self-signed v1 certificate for a root.
-        cert.subject().as_raw() == cert.issuer().as_raw()
+        // OpenSSL takes a self-signed v1 certificate for a root: one whose
+        // subject equals its issuer under `X509_NAME_cmp`. That compares a
+        // canonical form of each name, under which a value encoded as
+        // another string type, or in another case, is still the same
+        // value. Equal bytes are equal names; bytes that differ are
+        // usually different names, and when they might not be, the script
+        // decides.
+        let (subject, issuer) = (cert.subject(), cert.issuer());
+        if subject.as_raw() == issuer.as_raw() {
+            Ok(true)
+        } else if names_may_match(subject, issuer) {
+            Err(Undecided)
+        } else {
+            Ok(false)
+        }
     } else if key_usage.is_some() {
-        true
+        Ok(true)
     } else {
-        netscape_any_ca && netscape_ssl_ca
+        Ok(netscape_any_ca && netscape_ssl_ca)
     }
+}
+
+/// Whether `X509_NAME_cmp` could call `a` and `b` equal although their
+/// bytes differ: the same attributes, each string value the same once
+/// folded the way `x509_name_canon` folds it, in ASCII case and in
+/// surrounding and repeated whitespace. Approximate on purpose, erring
+/// towards "could".
+fn names_may_match(a: &X509Name, b: &X509Name) -> bool {
+    let fold = |name: &X509Name| -> Vec<Vec<(String, Vec<u8>)>> {
+        name.iter_rdn()
+            .map(|rdn| {
+                let mut attributes: Vec<(String, Vec<u8>)> = rdn
+                    .iter()
+                    .map(|attribute| {
+                        let value = match attribute.as_str() {
+                            Ok(text) => text
+                                .split_whitespace()
+                                .collect::<Vec<_>>()
+                                .join(" ")
+                                .to_ascii_lowercase()
+                                .into_bytes(),
+                            Err(_) => attribute.attr_value().data.to_vec(),
+                        };
+                        (attribute.attr_type().to_id_string(), value)
+                    })
+                    .collect();
+                attributes.sort();
+                attributes
+            })
+            .collect()
+    };
+    fold(a) == fold(b)
 }
 
 #[cfg(test)]
@@ -117,22 +167,68 @@ mod tests {
             let pem = std::fs::read(fixture(name)).unwrap();
             let (_, pem) = parse_x509_pem(&pem).unwrap();
             let cert = pem.parse_x509().unwrap();
-            assert_eq!(is_ssl_server_ca(&cert), *ssl_server_ca, "{name}");
+            assert_eq!(is_ssl_server_ca(&cert), Ok(*ssl_server_ca), "{name}");
             assert_eq!(fails_checkend(&cert, now()), *expired, "{name}");
         }
     }
 
-    /// Against the `openssl` the script runs: `/usr/bin/openssl` where it
-    /// exists, which on macOS is LibreSSL. OpenSSL reads the times LibreSSL
-    /// rejects, so `-checkend` is only compared with LibreSSL.
+    /// A v1 root whose issuer is its subject with the value encoded as
+    /// another string type. `X509_NAME_cmp` calls the names equal and
+    /// `openssl -purpose` says SSL server CA; the bytes differ, so the
+    /// answer is left to the script. A root whose names differ in content
+    /// is a plain no.
+    #[test]
+    fn leaves_a_v1_root_with_differently_encoded_names_to_the_script() {
+        let pem = std::fs::read(fixture("v1-root-mixed-names.pem")).unwrap();
+        let (_, pem) = parse_x509_pem(&pem).unwrap();
+        let cert = pem.parse_x509().unwrap();
+        assert_ne!(cert.subject().as_raw(), cert.issuer().as_raw());
+        assert_eq!(cert.subject().to_string(), cert.issuer().to_string());
+        assert_eq!(is_ssl_server_ca(&cert), Err(Undecided));
+
+        // The same certificate with the issuer's last letter changed to
+        // another letter: a different name, not a differently cased one.
+        let mut der = pem.contents.clone();
+        let issuer_value = cert.issuer().as_raw().to_vec();
+        let at = der
+            .windows(issuer_value.len())
+            .position(|window| window == issuer_value)
+            .unwrap();
+        der[at + issuer_value.len() - 1] ^= 0x01;
+        let (_, other) = X509Certificate::from_der(&der).unwrap();
+        assert_ne!(other.subject().to_string(), other.issuer().to_string());
+        assert_eq!(is_ssl_server_ca(&other), Ok(false));
+
+        if let Some(openssl) = script_openssl() {
+            let purpose = Command::new(&openssl)
+                .args(["x509", "-noout", "-purpose", "-in"])
+                .arg(fixture("v1-root-mixed-names.pem"))
+                .output()
+                .unwrap();
+            let purpose = String::from_utf8(purpose.stdout).unwrap();
+            assert!(
+                purpose.contains("SSL server CA : Yes"),
+                "openssl should call the names equal: {purpose}"
+            );
+        }
+    }
+
+    /// The `openssl` the script runs: `/usr/bin/openssl` where it exists,
+    /// which on macOS is LibreSSL, else whichever is on the PATH.
+    fn script_openssl() -> Option<std::path::PathBuf> {
+        let openssl = std::path::PathBuf::from("/usr/bin/openssl");
+        if openssl.is_file() {
+            Some(openssl)
+        } else {
+            which("openssl").ok()
+        }
+    }
+
+    /// Against the `openssl` the script runs. OpenSSL reads the times
+    /// LibreSSL rejects, so `-checkend` is only compared with LibreSSL.
     #[test]
     fn agrees_with_openssl() {
-        let openssl = std::path::PathBuf::from("/usr/bin/openssl");
-        let Ok(openssl) = (if openssl.is_file() {
-            Ok(openssl)
-        } else {
-            which("openssl")
-        }) else {
+        let Some(openssl) = script_openssl() else {
             eprintln!("skipping the openssl comparison: openssl not found");
             return;
         };

@@ -144,7 +144,7 @@ pub(super) fn run_step(
                 .iter()
                 .map(|arg| expand(ctx, arg))
                 .collect::<Result<Vec<_>, _>>()?;
-            let bundle = CaBundle::detect(ctx, &program, &args);
+            let bundle = CaBundle::detect(ctx, &program, &args, env);
             if let Some(bundle) = &bundle
                 && bundle.restore()?
             {
