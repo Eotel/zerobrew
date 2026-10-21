@@ -57,6 +57,43 @@ fn contains(line: &[u8], needle: &[u8]) -> bool {
     memchr::memmem::find(line, needle).is_some()
 }
 
+/// A chunk this module cannot read that `openssl x509` might: the
+/// bundle cannot be built here, the script has to.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct Unreadable;
+
+/// Whether `openssl x509` certainly fails on `chunk`, so that dropping it
+/// is what the script does: its first line does not start with the
+/// `BEGIN` marker (`PEM_read_bio` looks for one at a line start, and the
+/// chunk has no other), its body is empty, or the body has a byte outside
+/// base64 and whitespace, which the decoder rejects. Anything else that
+/// does not parse here might still parse there.
+pub(super) fn surely_rejected(chunk: &[u8]) -> bool {
+    let lines: Vec<&[u8]> = chunk
+        .split(|&byte| byte == b'\n')
+        .map(|line| line.strip_suffix(b"\r").unwrap_or(line))
+        .collect();
+    let Some((first, rest)) = lines.split_first() else {
+        return true;
+    };
+    if !first.starts_with(BEGIN) {
+        return true;
+    }
+    // The last line is the END marker; what's before it is the body.
+    let body = rest.iter().take_while(|line| !contains(line, END));
+    let mut bytes = 0;
+    for line in body {
+        for &byte in *line {
+            match byte {
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'/' | b'=' => bytes += 1,
+                b' ' | b'\t' => {}
+                _ => return true,
+            }
+        }
+    }
+    bytes == 0
+}
+
 /// A certificate as `openssl x509` reads it from one of the chunks: its DER
 /// and the SHA-256 fingerprint `openssl x509 -fingerprint -sha256` prints.
 pub(super) struct Certificate<'a> {
@@ -122,13 +159,17 @@ impl Bundle {
     }
 
     /// The script's `append_bundle`: every certificate in `input` that
-    /// `openssl` can read, once each.
-    pub(super) fn append_bundle(&mut self, input: &[u8]) {
+    /// `openssl` can read, once each. [`Unreadable`] for a chunk that
+    /// does not parse here unless `openssl` would certainly reject it too.
+    pub(super) fn append_bundle(&mut self, input: &[u8]) -> Result<(), Unreadable> {
         for chunk in certificates(input) {
-            if let Some(certificate) = Certificate::parse(&chunk) {
-                self.append_unique(&certificate);
+            match Certificate::parse(&chunk) {
+                Some(certificate) => self.append_unique(&certificate),
+                None if surely_rejected(&chunk) => {}
+                None => return Err(Unreadable),
             }
         }
+        Ok(())
     }
 
     pub(super) fn into_bytes(self) -> Vec<u8> {
@@ -352,7 +393,7 @@ pub(super) mod tests {
     #[test]
     fn the_bundle_keeps_each_readable_certificate_once() {
         let mut bundle = Bundle::default();
-        bundle.append_bundle(&awkward_bundle());
+        bundle.append_bundle(&awkward_bundle()).unwrap();
         let mut expected = Vec::new();
         for text in [ROOT_CA.to_vec(), crlf(LEAF), V1_ROOT.to_vec()] {
             expected.extend_from_slice(&text);
@@ -363,6 +404,37 @@ pub(super) mod tests {
         let mut raw = Bundle::default();
         raw.append_raw(b"anything\n");
         assert_eq!(raw.into_bytes(), b"anything\n\n");
+    }
+
+    /// What does not parse here is dropped only where `openssl` would
+    /// drop it too. A certificate with its base64 indented parses with
+    /// neither, but OpenSSL reads it, so it is left to the script.
+    #[test]
+    fn leaves_what_openssl_might_read_to_the_script() {
+        let chunks = split_certificates(&awkward_bundle());
+        assert!(surely_rejected(&chunks[2]), "a byte outside base64");
+        assert!(surely_rejected(&chunks[4]), "no BEGIN at a line start");
+        assert!(surely_rejected(
+            b"-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----\n"
+        ));
+        assert!(!surely_rejected(ROOT_CA));
+
+        let indented: Vec<u8> = String::from_utf8_lossy(ROOT_CA)
+            .lines()
+            .map(|line| {
+                if line.starts_with("-----") {
+                    format!("{line}\n")
+                } else {
+                    format!("    {line}\n")
+                }
+            })
+            .collect::<String>()
+            .into_bytes();
+        assert!(Certificate::parse(&indented).is_none());
+        assert!(!surely_rejected(&indented));
+        let mut bundle = Bundle::default();
+        assert_eq!(bundle.append_bundle(&indented), Err(Unreadable));
+        assert!(bundle.into_bytes().is_empty());
     }
 
     pub(in super::super) fn fixture(name: &str) -> std::path::PathBuf {

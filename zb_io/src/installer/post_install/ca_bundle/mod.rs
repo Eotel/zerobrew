@@ -202,7 +202,9 @@ fn append_system_certificates(
         .unwrap_or(0);
     append_keychain(bundle, TRUST_SOURCES[0], macos::Policy::Ssl, now)?;
     append_keychain(bundle, TRUST_SOURCES[1], macos::Policy::Basic, now)?;
-    bundle.append_bundle(mozilla);
+    bundle
+        .append_bundle(mozilla)
+        .map_err(|pem::Unreadable| unreadable("the Mozilla bundle"))?;
     Ok(())
 }
 
@@ -221,7 +223,10 @@ fn append_keychain(
     let mut candidates: Vec<pem::Certificate> = Vec::new();
     for chunk in &chunks {
         let Some(certificate) = pem::Certificate::parse(chunk) else {
-            continue;
+            if pem::surely_rejected(chunk) {
+                continue;
+            }
+            return Err(unreadable(keychain));
         };
         let x509 = certificate.x509();
         if purpose::fails_checkend(&x509, now) {
@@ -271,9 +276,14 @@ fn append_system_certificates(
         });
     match system {
         Some(system) if openssl => {
-            let system = fs::read(system).map_err(StepError::io("reading the system CA bundle"))?;
-            bundle.append_bundle(&system);
-            bundle.append_bundle(mozilla);
+            let content =
+                fs::read(system).map_err(StepError::io("reading the system CA bundle"))?;
+            bundle
+                .append_bundle(&content)
+                .map_err(|pem::Unreadable| unreadable(&system.display().to_string()))?;
+            bundle
+                .append_bundle(mozilla)
+                .map_err(|pem::Unreadable| unreadable("the Mozilla bundle"))?;
         }
         _ => {
             warn!(
@@ -285,6 +295,14 @@ fn append_system_certificates(
         }
     }
     Ok(())
+}
+
+/// The error for a certificate in `source` that `openssl` might read and
+/// this module cannot: the build stops and the script runs.
+fn unreadable(source: &str) -> StepError {
+    StepError::Failed(format!(
+        "a certificate in {source} that openssl may read could not be parsed"
+    ))
 }
 
 fn hex(digest: &[u8]) -> String {
