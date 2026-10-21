@@ -29,6 +29,7 @@ mod purpose;
 #[cfg(target_os = "macos")]
 mod macos;
 
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
@@ -75,13 +76,16 @@ pub(super) struct CaBundle {
 
 impl CaBundle {
     /// Recognise ca-certificates' bundle step and work out its cache key.
-    /// `None` for any other command.
+    /// `None` for any other command, and for a step that overrides the
+    /// environment: neither the key nor the in-process build accounts for
+    /// what the script might do differently under it.
     pub(super) fn detect(
         ctx: &PostInstallContext,
         program: &OsStr,
         args: &[String],
+        env: &BTreeMap<String, String>,
     ) -> Option<Self> {
-        if ctx.name != "ca-certificates" || args.len() != 2 {
+        if ctx.name != "ca-certificates" || args.len() != 2 || !env.is_empty() {
             return None;
         }
         let script = Path::new(program);
@@ -214,14 +218,27 @@ fn append_keychain(
 ) -> Result<(), StepError> {
     let exported = macos::export_keychain(keychain)?;
     let chunks = pem::certificates(&exported);
-    let candidates: Vec<pem::Certificate> = chunks
-        .iter()
-        .filter_map(|chunk| pem::Certificate::parse(chunk))
-        .filter(|certificate| {
-            let x509 = certificate.x509();
-            !purpose::fails_checkend(&x509, now) && purpose::is_ssl_server_ca(&x509)
-        })
-        .collect();
+    let mut candidates: Vec<pem::Certificate> = Vec::new();
+    for chunk in &chunks {
+        let Some(certificate) = pem::Certificate::parse(chunk) else {
+            continue;
+        };
+        let x509 = certificate.x509();
+        if purpose::fails_checkend(&x509, now) {
+            continue;
+        }
+        match purpose::is_ssl_server_ca(&x509) {
+            Ok(true) => {}
+            Ok(false) => continue,
+            Err(purpose::Undecided) => {
+                return Err(StepError::Failed(format!(
+                    "cannot tell whether {} is an SSL server CA",
+                    x509.subject()
+                )));
+            }
+        }
+        candidates.push(certificate);
+    }
     let ders: Vec<&[u8]> = candidates.iter().map(|c| c.der.as_slice()).collect();
     for (certificate, trusted) in candidates.iter().zip(macos::trusted(&ders, policy)) {
         if trusted {
@@ -385,7 +402,7 @@ mod tests {
             source.display().to_string(),
             tmp.path().join("native/cert.pem").display().to_string(),
         ];
-        let bundle = CaBundle::detect(&ctx, script.as_os_str(), &args).unwrap();
+        let bundle = CaBundle::detect(&ctx, script.as_os_str(), &args, &BTreeMap::new()).unwrap();
         assert!(bundle.script_is_known);
         let native = bundle.build_bytes(&ctx).unwrap();
         assert!(
@@ -503,7 +520,7 @@ mod tests {
             .unwrap()
             .as_secs() as i64;
         report += &format!(
-            "  native: expired={} ssl_server_ca={} trusted(ssl)={:?} trusted(basic)={:?} der={} bytes\n",
+            "  native: expired={} ssl_server_ca={:?} trusted(ssl)={:?} trusted(basic)={:?} der={} bytes\n",
             purpose::fails_checkend(&x509, now),
             purpose::is_ssl_server_ca(&x509),
             macos::trusted(&[certificate.der.as_slice()], macos::Policy::Ssl),
@@ -548,9 +565,9 @@ mod tests {
         let script = install_script(&ctx);
         let source = mozilla_source(&ctx, b"MOZILLA\n");
         let args = [source.display().to_string(), "b".to_string()];
-        let first = CaBundle::detect(&ctx, script.as_os_str(), &args).unwrap();
+        let first = CaBundle::detect(&ctx, script.as_os_str(), &args, &BTreeMap::new()).unwrap();
         fs::write(&script, "#!/bin/sh\nexit 1\n").unwrap();
-        let second = CaBundle::detect(&ctx, script.as_os_str(), &args).unwrap();
+        let second = CaBundle::detect(&ctx, script.as_os_str(), &args, &BTreeMap::new()).unwrap();
         assert_ne!(first.cached, second.cached);
     }
 
@@ -592,6 +609,23 @@ mod tests {
     }
 
     #[test]
+    fn a_step_with_env_overrides_runs_the_script_every_time() {
+        let tmp = TempDir::new().unwrap();
+        let ctx = context(tmp.path(), "ca-certificates", "2026-09-25");
+        install_script(&ctx);
+        mozilla_source(&ctx, b"MOZILLA\n");
+        let mut step = bundle_step();
+        if let StepAction::Run { env, .. } = &mut step {
+            env.insert("PATH".into(), "/usr/bin:/bin".into());
+        }
+
+        run_step(&ctx, &step).unwrap();
+        run_step(&ctx, &step).unwrap();
+        assert_eq!(runs(&ctx), 2, "the script runs each time");
+        assert!(!ctx.cache.exists(), "and nothing is cached");
+    }
+
+    #[test]
     fn only_ca_certificates_is_cached() {
         let tmp = TempDir::new().unwrap();
         let ctx = context(tmp.path(), "other-certs", "1");
@@ -610,17 +644,23 @@ mod tests {
     fn detect_ignores_other_commands_and_missing_sources() {
         let tmp = TempDir::new().unwrap();
         let ctx = context(tmp.path(), "ca-certificates", "1");
+        let no_env = BTreeMap::new();
         let args = ["a".to_string(), "b".to_string()];
-        assert!(CaBundle::detect(&ctx, OsStr::new("/bin/sh"), &args).is_none());
-        assert!(CaBundle::detect(&ctx, OsStr::new("post-install"), &args).is_none());
+        assert!(CaBundle::detect(&ctx, OsStr::new("/bin/sh"), &args, &no_env).is_none());
+        assert!(CaBundle::detect(&ctx, OsStr::new("post-install"), &args, &no_env).is_none());
         let source = ctx.keg.join("cacert.pem");
         fs::write(&source, "M").unwrap();
         let args = [source.display().to_string(), "b".to_string()];
-        let bundle = CaBundle::detect(&ctx, OsStr::new("post-install"), &args).unwrap();
+        let bundle = CaBundle::detect(&ctx, OsStr::new("post-install"), &args, &no_env).unwrap();
         assert!(
             !bundle.script_is_known,
             "an unreadable script is not a known one"
         );
-        assert!(CaBundle::detect(&ctx, OsStr::new("post-install"), &args[..1]).is_none());
+        assert!(CaBundle::detect(&ctx, OsStr::new("post-install"), &args[..1], &no_env).is_none());
+        let env = BTreeMap::from([("PATH".to_string(), "/nowhere".to_string())]);
+        assert!(
+            CaBundle::detect(&ctx, OsStr::new("post-install"), &args, &env).is_none(),
+            "a step with environment overrides is left to the script"
+        );
     }
 }
