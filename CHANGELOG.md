@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The Homebrew tap is `zerobrewhq/tap`: `brew install zerobrewhq/tap/zerobrew`. The repository was renamed from `homebrew-zerobrew`, so taps of `zerobrewhq/zerobrew` and `cachebag/zerobrew` keep updating through GitHub's redirect
+
+## [0.4.2] - 2026-10-21
+
 ### Added
 - Source builds can call `generate_completions_from_executable`, which Homebrew formulae use to write bash, zsh, fish and pwsh completions by running the tool they just built. Same arguments and `shell_parameter_format` table as Homebrew. A run that fails aborts the build and reports its command, and no completion file is left behind ([#468](https://github.com/zerobrewhq/zerobrew/pull/468))
 
@@ -225,7 +230,8 @@ To get an idea of the initial features zerobrew supports, take a look at the [RE
 
 See the [full commit history](https://github.com/zerobrewhq/zerobrew/commits/v0.1.1) for more details.
 
-[Unreleased]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/zerobrewhq/zerobrew/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/zerobrewhq/zerobrew/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/zerobrewhq/zerobrew/compare/v0.3.4...v0.3.5

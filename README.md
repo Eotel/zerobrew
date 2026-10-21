@@ -32,7 +32,7 @@ or run the `source` command it prints.
 Or via Homebrew:
 
 ```bash
-brew install zerobrewhq/zerobrew/zerobrew
+brew install zerobrewhq/tap/zerobrew
 ```
 
 ## Update zerobrew
@@ -55,8 +55,10 @@ If you installed from the old `lucasgelfond/zerobrew` tap, it's no longer update
 ```bash
 brew uninstall zerobrew
 brew untap lucasgelfond/zerobrew
-brew install zerobrewhq/zerobrew/zerobrew
+brew install zerobrewhq/tap/zerobrew
 ```
+
+The `cachebag/zerobrew` and `zerobrewhq/zerobrew` taps were moved to `zerobrewhq/tap` and keep updating; nothing to do.
 
 ## Quick start
 
