@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The Homebrew tap is `zerobrewhq/tap`: `brew install zerobrewhq/tap/zerobrew`. The repository was renamed from `homebrew-zerobrew`, so taps of `zerobrewhq/zerobrew` and `cachebag/zerobrew` keep updating through GitHub's redirect
 
+### Fixed
+- Running `zb` with no arguments now shows the help when `ZEROBREW_ROOT` or `ZEROBREW_AUTO_INIT` is set, as it is after `zb init`, instead of a missing-subcommand error ([#357](https://github.com/zerobrewhq/zerobrew/issues/357))
+
 ## [0.4.2] - 2026-10-21
 
 ### Added

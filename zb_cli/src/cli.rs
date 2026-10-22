@@ -1,4 +1,5 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -47,6 +48,28 @@ pub struct Cli {
     pub command: Commands,
 }
 
+impl Cli {
+    /// Parses `args`, showing the help when no arguments are given.
+    ///
+    /// clap already does this for a required subcommand, but it counts options
+    /// set from the environment as given. Once `zb init` has exported
+    /// `ZEROBREW_ROOT`, a bare `zb` printed a missing-subcommand error instead
+    /// of the help, so the environment is ignored in that case.
+    pub fn try_parse_args<I, T>(args: I) -> Result<Self, clap::Error>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<OsString> + Clone,
+    {
+        let args: Vec<OsString> = args.into_iter().map(Into::into).collect();
+        let mut command = Self::command();
+        if args.len() <= 1 {
+            command = command.mut_args(|arg| arg.env(None));
+        }
+        let mut matches = command.try_get_matches_from(args)?;
+        Self::from_arg_matches_mut(&mut matches).map_err(|e| e.format(&mut Self::command()))
+    }
+}
+
 fn parse_concurrency(value: &str) -> Result<usize, String> {
     let parsed = value
         .parse::<usize>()
@@ -60,7 +83,41 @@ fn parse_concurrency(value: &str) -> Result<usize, String> {
 #[cfg(test)]
 mod tests {
     use super::Cli;
-    use clap::Parser;
+    use clap::{Parser, error::ErrorKind};
+
+    #[test]
+    fn shows_help_without_arguments() {
+        let err = Cli::try_parse_args(["zb"])
+            .err()
+            .expect("bare zb should not parse");
+        assert_eq!(
+            err.kind(),
+            ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        );
+    }
+
+    #[test]
+    fn shows_help_without_arguments_when_env_options_are_set() {
+        unsafe {
+            std::env::set_var("ZEROBREW_AUTO_INIT", "true");
+        }
+        let result = Cli::try_parse_args(["zb"]);
+        unsafe {
+            std::env::remove_var("ZEROBREW_AUTO_INIT");
+        }
+        let err = result.err().expect("bare zb should not parse");
+        assert_eq!(
+            err.kind(),
+            ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand
+        );
+    }
+
+    #[test]
+    fn parses_subcommand_through_try_parse_args() {
+        let cli = Cli::try_parse_args(["zb", "-v", "list"]).unwrap();
+        assert_eq!(cli.verbose, 1);
+        assert!(matches!(cli.command, super::Commands::List));
+    }
 
     #[test]
     fn accepts_positive_concurrency() {
