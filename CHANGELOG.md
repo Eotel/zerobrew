@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Re-measure the README and site benchmarks on 0.4.2, wired at ~436 Mbit/s: 7.8x faster cold and 25x faster warm over 100 packages, median 7.5x cold. The in-process CA bundle is most of the change from 3.6x: ca-certificates and everything depending on it went from under 2x to 10x and more. The run and its log are under `results/2026-10-23`, with a ~80 Mbit/s run from two days earlier beside it
 - The Homebrew tap is `zerobrewhq/tap`: `brew install zerobrewhq/tap/zerobrew`. The repository was renamed from `homebrew-zerobrew`, so taps of `zerobrewhq/zerobrew` and `cachebag/zerobrew` keep updating through GitHub's redirect
 
 ### Fixed

@@ -5,24 +5,24 @@
       "label": "ZB",
       "tag": "warm",
       "width": 4,
-      "speedup": "23x",
-      "time": "27.7s",
+      "speedup": "25x",
+      "time": "29.9s",
       "color": "var(--color-warm)"
     },
     {
       "label": "HB",
       "tag": "warm",
-      "width": 83,
+      "width": 89,
       "speedup": "",
-      "time": "650s",
+      "time": "756s",
       "color": "var(--color-wave)"
     },
     {
       "label": "ZB",
       "tag": "cold",
-      "width": 28,
-      "speedup": "3.6x",
-      "time": "216s",
+      "width": 13,
+      "speedup": "7.8x",
+      "time": "109s",
       "color": "var(--color-cold)"
     },
     {
@@ -30,7 +30,7 @@
       "tag": "cold",
       "width": 100,
       "speedup": "",
-      "time": "782s",
+      "time": "853s",
       "color": "var(--color-wave)"
     }
   ]

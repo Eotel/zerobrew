@@ -115,130 +115,130 @@ explicitly to configure your shell, or `zb init --no-modify-path` to leave it un
 
 | Package | Homebrew (cold) | ZB (cold) | Cold speedup | Homebrew (warm) | ZB (warm) | Warm speedup |
 |---------|-----------------|-----------|--------------|-----------------|-----------|--------------|
-| **Overall (100 packages)** | 782s | 216s | **3.6x** | 650s | 27.7s | **23x** |
-| python@3.14 | 17.10s | 6.44s | 2.7x | 15.33s | 440ms | 34.8x |
-| node | 28.37s | 7.24s | 3.9x | 26.80s | 743ms | 36.1x |
-| tesseract | 35.42s | 5.20s | 6.8x | 33.95s | 2.88s | 11.8x |
-| openjdk | 31.64s | 6.80s | 4.7x | 29.65s | 2.93s | 10.1x |
-| llvm | 26.15s | 6.50s | 4.0x | 9.78s | 191ms | 51.2x |
+| **Overall (100 packages)** | 853s | 109s | **7.8x** | 756s | 29.9s | **25x** |
+| python@3.14 | 17.85s | 1.86s | 9.6x | 17.10s | 624ms | 27.4x |
+| node | 32.46s | 2.08s | 15.6x | 31.18s | 889ms | 35.1x |
+| tesseract | 39.87s | 4.37s | 9.1x | 38.24s | 2.86s | 13.4x |
+| openjdk | 34.14s | 6.09s | 5.6x | 31.67s | 2.81s | 11.3x |
+| llvm | 17.09s | 6.09s | 2.8x | 10.51s | 172ms | 61.1x |
 
 </div>
 
-Measured on 2026-10-12 with zerobrew 0.4.0+dev and Homebrew 7.0.9 on macOS 26.6.2, MacBook Pro (M3 Pro, 18 GB RAM), ~374 Mbit/s download bandwidth. Homebrew started with nothing installed.
+Measured on 2026-10-23 with zerobrew 0.4.2 and Homebrew 7.0.10 on macOS 26.6.2, MacBook Pro (M3 Pro, 18 GB RAM), wired, ~436 Mbit/s download bandwidth. Homebrew started with nothing installed.
 
 - **Cold**: the package and all of its dependencies uninstalled, empty download cache.
 - **Warm**: the package and all of its dependencies uninstalled, downloads from the cold run still cached.
-- The median package was 4.8x faster cold and 52x faster warm. Per package, cold ranged from 1.4x (ca-certificates) to 16x (jpeg-xl) and warm from 3.5x (fontconfig) to 232x (ca-certificates). 17 of the 100 packages installed 100x faster or more warm.
-- Both tools run post-install steps here. ca-certificates' step rebuilds the CA bundle from the system keychain, about 5 seconds under either tool, and nearly everything depends on it, so it sets the cold floor for most of the table. zerobrew caches the bundle, which is why ca-certificates is 27ms warm. fontconfig's `fc-cache` is the same story and is not cached yet ([#448](https://github.com/zerobrewhq/zerobrew/issues/448)), which is what holds fontconfig, harfbuzz, cairo and pango under 10x warm.
-- Cold installs are bound by the link. The same run on a ~69 Mbit/s connection ([results/2026-10-07](results/2026-10-07/benchmark.md)) came out at 3.3x cold, before post-install. The run from before zerobrew ran post-install steps is [results/2026-10-08](results/2026-10-08/benchmark.md): 6.6x cold and 68x warm, with Homebrew doing that work and zerobrew not.
-- Warm installs use more disk. After an uninstall brew keeps the bottle, we keep the bottle and the unpacked keg in the store. That's the whole reason a reinstall is a clone and not a rebuild. `zb gc` clears it. I'll measure both for the same set and put the numbers here.
+- The median package was 7.5x faster cold and 62x faster warm. Per package, cold ranged from 1.7x (go) to 27x (certifi) and warm from 4.0x (fontconfig) to 275x (p11-kit). 86 of the 100 packages installed at least 5x faster cold, and 19 installed 100x faster or more warm.
+- Both tools run post-install steps. ca-certificates' step builds the CA bundle from the system keychain, which costs Homebrew about 8 seconds and used to cost zerobrew the same on every package that depends on it, most of the table. Since 0.4.2 zerobrew builds that bundle in process, byte for byte, in well under a second; the run from before that ([results/2026-10-12](results/2026-10-12/benchmark.md)) was 3.6x cold. fontconfig's `fc-cache` is the same kind of step and is not ported yet ([#448](https://github.com/zerobrewhq/zerobrew/issues/448)), which is what holds fontconfig, harfbuzz, cairo and pango under 10x warm.
+- Cold installs are bound by the link. The same run on a ~80 Mbit/s connection two days earlier ([results/2026-10-21](results/2026-10-21/benchmark.md)) came out at 3.7x cold overall, with go and llvm at the speed of the download, while the median package was still 6.2x. Homebrew's total barely moves with bandwidth; zerobrew's is mostly bandwidth.
+- Warm installs use more disk. After an uninstall brew keeps the bottle, we keep the bottle and the unpacked keg in the store. That is the main tradeoff here. 
 
 <details>
 <summary>Full results</summary>
 
 | Package | Homebrew (cold) | ZB (cold) | Cold speedup | Homebrew (warm) | ZB (warm) | Warm speedup |
 |---------|-----------------|-----------|--------------|-----------------|-----------|--------------|
-| **Overall (100 packages)** | 781.58s | 215.64s | **3.62x** | 650.09s | 27.74s | **23.43x** |
-| ca-certificates | 7.25s | 5.35s | 1.36x | 6.25s | 27ms | 231.67x |
-| openssl@3 | 9.96s | 5.95s | 1.67x | 9.09s | 78ms | 116.55x |
-| xz | 2.36s | 575ms | 4.11x | 1.40s | 27ms | 51.96x |
-| sqlite | 2.98s | 588ms | 5.08x | 1.98s | 25ms | 79.24x |
-| readline | 2.56s | 917ms | 2.79x | 1.43s | 29ms | 49.38x |
-| icu4c@78 | 3.33s | 1.37s | 2.43x | 1.72s | 28ms | 61.57x |
-| python@3.14 | 17.10s | 6.44s | 2.66x | 15.33s | 440ms | 34.84x |
-| awscli | 27.04s | 8.25s | 3.28x | 25.70s | 742ms | 34.64x |
-| node | 28.37s | 7.24s | 3.92x | 26.80s | 743ms | 36.06x |
-| harfbuzz | 22.32s | 4.62s | 4.83x | 20.59s | 2.80s | 7.36x |
-| ncurses | 2.97s | 962ms | 3.09x | 2.03s | 47ms | 43.17x |
-| gh | 2.54s | 951ms | 2.67x | 1.26s | 35ms | 36.09x |
-| pcre2 | 2.54s | 780ms | 3.26x | 1.49s | 33ms | 45.00x |
-| libpng | 2.29s | 409ms | 5.60x | 1.43s | 26ms | 54.81x |
-| zstd | 3.60s | 550ms | 6.54x | 2.68s | 32ms | 83.62x |
-| glib | 6.39s | 1.43s | 4.46x | 5.15s | 93ms | 55.39x |
-| lz4 | 2.28s | 394ms | 5.79x | 1.42s | 27ms | 52.41x |
-| gettext | 4.26s | 1.02s | 4.16x | 3.18s | 64ms | 49.66x |
-| libngtcp2 | 10.78s | 6.59s | 1.64x | 9.68s | 345ms | 28.06x |
-| libnghttp3 | 2.34s | 416ms | 5.63x | 1.44s | 25ms | 57.68x |
-| pkgconf | 2.46s | 449ms | 5.47x | 1.44s | 27ms | 53.19x |
-| libunistring | 2.51s | 613ms | 4.10x | 1.44s | 27ms | 53.37x |
-| mpdecimal | 2.36s | 460ms | 5.14x | 1.43s | 26ms | 54.92x |
-| brotli | 2.53s | 536ms | 4.73x | 1.43s | 28ms | 51.04x |
-| jpeg-turbo | 2.45s | 581ms | 4.22x | 1.42s | 27ms | 52.63x |
-| xorgproto | 2.19s | 470ms | 4.67x | 1.21s | 29ms | 41.76x |
-| ffmpeg | 18.94s | 6.73s | 2.81x | 17.81s | 373ms | 47.75x |
-| cmake | 3.00s | 1.39s | 2.17x | 1.69s | 79ms | 21.43x |
-| libnghttp2 | 2.36s | 443ms | 5.33x | 1.47s | 27ms | 54.30x |
-| go | 5.51s | 3.14s | 1.75x | 3.28s | 192ms | 17.07x |
-| uv | 2.50s | 856ms | 2.92x | 1.23s | 29ms | 42.34x |
-| gmp | 2.44s | 604ms | 4.04x | 1.44s | 27ms | 53.30x |
-| libtiff | 7.09s | 666ms | 10.64x | 6.01s | 52ms | 115.62x |
-| fontconfig | 9.95s | 3.76s | 2.65x | 8.79s | 2.49s | 3.53x |
-| python@3.13 | 14.35s | 6.49s | 2.21x | 12.67s | 196ms | 64.66x |
-| git | 6.44s | 1.47s | 4.38x | 4.78s | 135ms | 35.38x |
-| little-cms2 | 7.79s | 745ms | 10.46x | 6.79s | 54ms | 125.67x |
-| dav1d | 2.50s | 470ms | 5.32x | 1.45s | 27ms | 53.67x |
-| openexr | 9.90s | 762ms | 12.99x | 8.80s | 61ms | 144.21x |
-| c-ares | 2.44s | 472ms | 5.18x | 1.48s | 32ms | 46.25x |
-| tesseract | 35.42s | 5.20s | 6.82x | 33.95s | 2.88s | 11.79x |
-| p11-kit | 8.64s | 5.20s | 1.66x | 7.70s | 34ms | 226.44x |
-| imagemagick | 14.91s | 1.29s | 11.51x | 13.81s | 82ms | 168.46x |
-| zlib | 2.31s | 423ms | 5.46x | 1.42s | 26ms | 54.65x |
-| libx11 | 5.72s | 1.01s | 5.65x | 4.71s | 200ms | 23.57x |
-| freetype | 3.66s | 512ms | 7.15x | 2.71s | 30ms | 90.27x |
-| protobuf | 3.97s | 691ms | 5.74x | 2.94s | 58ms | 50.69x |
-| gnupg | 22.00s | 6.30s | 3.49x | 20.51s | 199ms | 103.09x |
-| openjph | 7.80s | 684ms | 11.41x | 6.80s | 54ms | 126.02x |
-| libtasn1 | 2.38s | 379ms | 6.27x | 1.47s | 27ms | 54.26x |
-| ruby | 16.37s | 8.51s | 1.92x | 15.32s | 989ms | 15.49x |
-| gnutls | 15.08s | 5.86s | 2.57x | 13.79s | 136ms | 101.36x |
-| expat | 2.34s | 463ms | 5.06x | 1.43s | 26ms | 54.85x |
-| libsodium | 2.47s | 533ms | 4.64x | 1.46s | 28ms | 52.18x |
-| simdjson | 2.53s | 561ms | 4.52x | 1.45s | 27ms | 53.63x |
-| gemini-cli | 30.67s | 7.27s | 4.22x | 28.36s | 748ms | 37.92x |
-| libarchive | 5.07s | 594ms | 8.54x | 3.98s | 36ms | 110.50x |
-| pyenv | 13.46s | 6.24s | 2.16x | 11.96s | 414ms | 28.88x |
-| pixman | 2.35s | 483ms | 4.87x | 1.46s | 28ms | 52.29x |
-| curl | 17.31s | 6.95s | 2.49x | 16.21s | 447ms | 36.27x |
-| opus | 2.53s | 499ms | 5.08x | 1.49s | 27ms | 55.07x |
-| unbound | 13.20s | 6.39s | 2.06x | 11.83s | 390ms | 30.33x |
-| cairo | 20.75s | 4.33s | 4.79x | 19.90s | 2.77s | 7.19x |
-| pango | 26.81s | 4.30s | 6.23x | 24.00s | 2.88s | 8.34x |
-| leptonica | 9.43s | 763ms | 12.36x | 8.52s | 64ms | 133.19x |
-| libxcb | 4.90s | 913ms | 5.36x | 4.11s | 141ms | 29.15x |
-| jpeg-xl | 13.00s | 814ms | 15.97x | 11.92s | 70ms | 170.33x |
-| coreutils | 4.28s | 1.08s | 3.95x | 2.23s | 37ms | 60.16x |
-| certifi | 7.81s | 5.40s | 1.45x | 6.97s | 34ms | 204.97x |
-| krb5 | 11.11s | 6.25s | 1.78x | 10.02s | 374ms | 26.78x |
-| docker | 2.31s | 620ms | 3.73x | 1.21s | 28ms | 43.11x |
-| libheif | 10.70s | 901ms | 11.87x | 9.84s | 64ms | 153.73x |
-| webp | 4.39s | 936ms | 4.69x | 3.44s | 37ms | 93.00x |
-| libxext | 6.72s | 941ms | 7.14x | 6.00s | 207ms | 28.98x |
-| libxau | 2.83s | 544ms | 5.20x | 2.02s | 37ms | 54.65x |
-| gcc | 11.50s | 3.00s | 3.84x | 9.18s | 69ms | 132.97x |
-| bzip2 | 2.29s | 447ms | 5.12x | 1.17s | 27ms | 43.48x |
-| libxdmcp | 3.04s | 517ms | 5.87x | 1.87s | 44ms | 42.43x |
-| abseil | 3.15s | 706ms | 4.45x | 1.91s | 56ms | 34.12x |
-| xcbeautify | 2.31s | 514ms | 4.48x | 1.23s | 46ms | 26.78x |
-| libuv | 2.59s | 419ms | 6.17x | 1.54s | 37ms | 41.62x |
-| giflib | 2.46s | 432ms | 5.70x | 1.53s | 26ms | 58.73x |
-| utf8proc | 2.60s | 341ms | 7.64x | 1.58s | 27ms | 58.56x |
-| libxrender | 6.77s | 907ms | 7.46x | 5.58s | 174ms | 32.04x |
-| m4 | 2.08s | 455ms | 4.58x | 1.15s | 26ms | 44.15x |
-| graphite2 | 2.33s | 443ms | 5.25x | 1.46s | 37ms | 39.46x |
-| openjdk | 31.64s | 6.80s | 4.65x | 29.65s | 2.93s | 10.11x |
-| uvwasi | 2.99s | 477ms | 6.28x | 2.18s | 41ms | 53.20x |
-| libffi | 2.56s | 470ms | 5.45x | 1.55s | 34ms | 45.56x |
-| libdeflate | 2.68s | 326ms | 8.23x | 1.55s | 33ms | 47.09x |
-| llvm | 26.15s | 6.50s | 4.02x | 9.78s | 191ms | 51.19x |
-| aom | 3.18s | 621ms | 5.13x | 2.16s | 33ms | 65.42x |
-| lzo | 2.44s | 409ms | 5.98x | 1.46s | 27ms | 53.93x |
-| libevent | 11.16s | 6.45s | 1.73x | 9.94s | 348ms | 28.55x |
-| libgpg-error | 5.03s | 986ms | 5.10x | 3.93s | 71ms | 55.35x |
-| libidn2 | 4.86s | 979ms | 4.96x | 3.86s | 71ms | 54.42x |
-| berkeley-db@5 | 4.10s | 1.46s | 2.80x | 2.68s | 56ms | 47.86x |
-| deno | 10.73s | 1.24s | 8.64x | 9.21s | 58ms | 158.84x |
-| libedit | 2.34s | 457ms | 5.11x | 1.44s | 27ms | 53.41x |
-| oniguruma | 2.39s | 489ms | 4.88x | 1.48s | 27ms | 54.93x |
+| **Overall (100 packages)** | 852.82s | 108.73s | **7.84x** | 755.53s | 29.91s | **25.26x** |
+| ca-certificates | 8.35s | 361ms | 23.13x | 7.69s | 29ms | 265.28x |
+| openssl@3 | 11.44s | 1.15s | 9.92x | 10.58s | 63ms | 167.95x |
+| xz | 2.43s | 391ms | 6.22x | 1.62s | 28ms | 57.93x |
+| sqlite | 3.10s | 450ms | 6.90x | 2.31s | 27ms | 85.44x |
+| readline | 2.40s | 524ms | 4.57x | 1.62s | 26ms | 62.23x |
+| icu4c@78 | 3.00s | 871ms | 3.44x | 1.94s | 27ms | 71.96x |
+| python@3.14 | 17.85s | 1.86s | 9.61x | 17.10s | 624ms | 27.40x |
+| awscli | 31.02s | 3.05s | 10.17x | 29.72s | 884ms | 33.62x |
+| node | 32.46s | 2.08s | 15.58x | 31.18s | 889ms | 35.07x |
+| harfbuzz | 25.17s | 4.16s | 6.05x | 23.51s | 2.80s | 8.40x |
+| ncurses | 3.04s | 779ms | 3.90x | 2.28s | 48ms | 47.54x |
+| gh | 2.33s | 584ms | 3.98x | 1.47s | 36ms | 40.83x |
+| pcre2 | 2.54s | 484ms | 5.25x | 1.75s | 33ms | 52.91x |
+| libpng | 2.46s | 348ms | 7.06x | 1.69s | 27ms | 62.41x |
+| zstd | 3.93s | 431ms | 9.13x | 3.14s | 34ms | 92.32x |
+| glib | 6.91s | 924ms | 7.48x | 5.89s | 98ms | 60.09x |
+| lz4 | 2.41s | 311ms | 7.75x | 1.68s | 26ms | 64.65x |
+| gettext | 4.53s | 951ms | 4.76x | 3.66s | 65ms | 56.25x |
+| libngtcp2 | 12.29s | 1.50s | 8.22x | 11.43s | 516ms | 22.15x |
+| libnghttp3 | 2.42s | 351ms | 6.89x | 1.67s | 26ms | 64.04x |
+| pkgconf | 2.47s | 311ms | 7.95x | 1.68s | 27ms | 62.07x |
+| libunistring | 2.45s | 421ms | 5.81x | 1.69s | 27ms | 62.63x |
+| mpdecimal | 2.46s | 314ms | 7.84x | 1.67s | 26ms | 64.27x |
+| brotli | 2.48s | 375ms | 6.61x | 1.69s | 27ms | 62.41x |
+| jpeg-turbo | 2.51s | 420ms | 5.97x | 1.71s | 28ms | 60.96x |
+| xorgproto | 2.14s | 360ms | 5.95x | 1.36s | 29ms | 46.79x |
+| ffmpeg | 22.61s | 1.73s | 13.04x | 21.20s | 592ms | 35.81x |
+| cmake | 3.19s | 1.02s | 3.12x | 1.89s | 80ms | 23.56x |
+| libnghttp2 | 2.46s | 313ms | 7.87x | 1.67s | 26ms | 64.04x |
+| go | 4.79s | 2.77s | 1.73x | 3.50s | 169ms | 20.74x |
+| uv | 2.37s | 606ms | 3.91x | 1.44s | 26ms | 55.23x |
+| gmp | 2.46s | 446ms | 5.51x | 1.69s | 27ms | 62.44x |
+| libtiff | 8.00s | 541ms | 14.78x | 7.17s | 54ms | 132.81x |
+| fontconfig | 10.75s | 3.60s | 2.98x | 9.79s | 2.47s | 3.96x |
+| python@3.13 | 15.95s | 1.60s | 9.97x | 15.26s | 189ms | 80.74x |
+| git | 6.93s | 1.17s | 5.92x | 5.52s | 103ms | 53.56x |
+| little-cms2 | 8.76s | 546ms | 16.05x | 8.00s | 56ms | 142.79x |
+| dav1d | 2.48s | 330ms | 7.52x | 1.71s | 26ms | 65.62x |
+| openexr | 11.36s | 638ms | 17.80x | 10.40s | 66ms | 157.59x |
+| c-ares | 2.50s | 330ms | 7.56x | 1.73s | 33ms | 52.42x |
+| tesseract | 39.87s | 4.37s | 9.13x | 38.24s | 2.86s | 13.38x |
+| p11-kit | 10.11s | 446ms | 22.68x | 9.34s | 34ms | 274.65x |
+| imagemagick | 17.23s | 3.10s | 5.57x | 16.23s | 84ms | 193.27x |
+| zlib | 2.42s | 307ms | 7.87x | 1.66s | 26ms | 63.69x |
+| libx11 | 6.10s | 828ms | 7.37x | 5.32s | 184ms | 28.91x |
+| freetype | 3.94s | 438ms | 9.00x | 3.20s | 32ms | 100.03x |
+| protobuf | 4.06s | 576ms | 7.06x | 3.30s | 62ms | 53.19x |
+| gnupg | 25.70s | 1.07s | 23.95x | 24.34s | 189ms | 128.76x |
+| openjph | 8.81s | 554ms | 15.90x | 8.00s | 56ms | 142.82x |
+| libtasn1 | 2.45s | 338ms | 7.25x | 1.71s | 28ms | 61.00x |
+| ruby | 18.05s | 3.84s | 4.70x | 17.75s | 1.34s | 13.28x |
+| gnutls | 18.21s | 978ms | 18.62x | 16.46s | 139ms | 118.40x |
+| expat | 2.48s | 310ms | 8.01x | 1.67s | 27ms | 61.93x |
+| libsodium | 2.49s | 337ms | 7.39x | 1.71s | 27ms | 63.44x |
+| simdjson | 2.49s | 405ms | 6.15x | 1.69s | 26ms | 65.08x |
+| gemini-cli | 33.61s | 2.25s | 14.91x | 32.56s | 917ms | 35.50x |
+| libarchive | 5.44s | 464ms | 11.73x | 4.74s | 37ms | 128.08x |
+| pyenv | 15.43s | 1.69s | 9.16x | 14.56s | 544ms | 26.76x |
+| pixman | 2.64s | 345ms | 7.64x | 1.71s | 27ms | 63.33x |
+| curl | 19.71s | 1.61s | 12.20x | 18.61s | 570ms | 32.65x |
+| opus | 2.43s | 345ms | 7.05x | 1.69s | 26ms | 65.12x |
+| unbound | 14.67s | 1.54s | 9.51x | 13.73s | 554ms | 24.79x |
+| cairo | 22.24s | 4.03s | 5.52x | 20.97s | 2.77s | 7.56x |
+| pango | 28.60s | 4.10s | 6.97x | 27.39s | 2.79s | 9.80x |
+| leptonica | 10.53s | 624ms | 16.88x | 9.85s | 65ms | 151.58x |
+| libxcb | 5.18s | 755ms | 6.86x | 4.39s | 139ms | 31.55x |
+| jpeg-xl | 15.14s | 720ms | 21.03x | 14.04s | 72ms | 194.96x |
+| coreutils | 13.36s | 1.60s | 8.37x | 12.38s | 529ms | 23.41x |
+| certifi | 9.07s | 342ms | 26.54x | 8.34s | 37ms | 225.51x |
+| krb5 | 12.54s | 1.50s | 8.33x | 11.66s | 510ms | 22.86x |
+| docker | 2.25s | 533ms | 4.21x | 1.39s | 27ms | 51.48x |
+| libheif | 12.14s | 736ms | 16.49x | 11.27s | 66ms | 170.77x |
+| webp | 4.68s | 432ms | 10.84x | 3.95s | 35ms | 112.74x |
+| libxext | 6.97s | 804ms | 8.67x | 6.20s | 189ms | 32.80x |
+| libxau | 2.86s | 346ms | 8.26x | 2.15s | 32ms | 67.31x |
+| gcc | 11.91s | 2.48s | 4.80x | 9.94s | 72ms | 138.01x |
+| bzip2 | 2.10s | 300ms | 7.01x | 1.31s | 26ms | 50.54x |
+| libxdmcp | 2.89s | 349ms | 8.28x | 2.14s | 34ms | 63.03x |
+| abseil | 3.02s | 545ms | 5.54x | 2.18s | 54ms | 40.37x |
+| xcbeautify | 2.13s | 371ms | 5.74x | 1.35s | 27ms | 49.93x |
+| libuv | 2.50s | 340ms | 7.34x | 1.71s | 27ms | 63.30x |
+| giflib | 2.43s | 293ms | 8.31x | 1.69s | 27ms | 62.67x |
+| utf8proc | 2.46s | 313ms | 7.88x | 1.68s | 26ms | 64.62x |
+| libxrender | 6.94s | 798ms | 8.69x | 6.14s | 182ms | 33.74x |
+| m4 | 2.11s | 292ms | 7.21x | 1.31s | 26ms | 50.42x |
+| graphite2 | 2.42s | 304ms | 7.97x | 1.68s | 26ms | 64.77x |
+| openjdk | 34.14s | 6.09s | 5.60x | 31.67s | 2.81s | 11.26x |
+| uvwasi | 3.20s | 328ms | 9.75x | 2.45s | 29ms | 84.52x |
+| libffi | 2.47s | 329ms | 7.50x | 1.67s | 26ms | 64.31x |
+| libdeflate | 2.47s | 330ms | 7.47x | 1.68s | 26ms | 64.73x |
+| llvm | 17.09s | 6.09s | 2.81x | 10.51s | 172ms | 61.10x |
+| aom | 3.35s | 529ms | 6.33x | 2.50s | 32ms | 78.19x |
+| lzo | 2.48s | 289ms | 8.57x | 1.69s | 27ms | 62.74x |
+| libevent | 12.35s | 1.47s | 8.38x | 11.50s | 507ms | 22.69x |
+| libgpg-error | 5.26s | 861ms | 6.11x | 4.45s | 71ms | 62.68x |
+| libidn2 | 5.28s | 765ms | 6.90x | 4.41s | 72ms | 61.29x |
+| berkeley-db@5 | 3.96s | 1.44s | 2.75x | 2.84s | 57ms | 49.81x |
+| deno | 11.83s | 1.08s | 10.97x | 10.80s | 59ms | 183.03x |
+| libedit | 2.46s | 329ms | 7.47x | 1.68s | 26ms | 64.69x |
+| oniguruma | 2.49s | 328ms | 7.60x | 1.68s | 26ms | 64.62x |
 
 </details>
 

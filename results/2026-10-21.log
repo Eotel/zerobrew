@@ -1,0 +1,1010 @@
+[36mLoading Homebrew formula index...[0m
+[36mMeasuring download bandwidth (go bottle)...[0m
+[36m[1/100] Testing: ca-certificates[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.44s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 8.67s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 429ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 31ms[0m
+
+[36m[2/100] Testing: openssl@3[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 13.06s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 11.00s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.82s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 76ms[0m
+
+[36m[3/100] Testing: xz[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.71s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.74s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 420ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 31ms[0m
+
+[36m[4/100] Testing: sqlite[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.75s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.61s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 700ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[5/100] Testing: readline[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.52s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.70s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 374ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 26ms[0m
+
+[36m[6/100] Testing: icu4c@78[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 5.65s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.04s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.45s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[7/100] Testing: python@3.14[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 22.69s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 17.67s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 4.02s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 639ms[0m
+
+[36m[8/100] Testing: awscli[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 38.89s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 33.01s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 7.67s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 899ms[0m
+
+[36m[9/100] Testing: node[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 40.65s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 35.15s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 8.07s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 877ms[0m
+
+[36m[10/100] Testing: harfbuzz[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 32.15s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 25.20s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 9.68s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.78s[0m
+
+[36m[11/100] Testing: ncurses[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.84s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.36s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.05s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 50ms[0m
+
+[36m[12/100] Testing: gh[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.77s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.53s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.34s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 39ms[0m
+
+[36m[13/100] Testing: pcre2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.31s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.00s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 616ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 35ms[0m
+
+[36m[14/100] Testing: libpng[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.66s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.93s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 371ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 45ms[0m
+
+[36m[15/100] Testing: zstd[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.51s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 3.50s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 566ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 39ms[0m
+
+[36m[16/100] Testing: glib[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.51s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 6.49s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.33s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 101ms[0m
+
+[36m[17/100] Testing: lz4[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.82s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.90s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 439ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 32ms[0m
+
+[36m[18/100] Testing: gettext[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 6.36s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.12s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.68s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 77ms[0m
+
+[36m[19/100] Testing: libngtcp2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 14.91s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 12.86s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.43s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 500ms[0m
+
+[36m[20/100] Testing: libnghttp3[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.72s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.74s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 383ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 59ms[0m
+
+[36m[21/100] Testing: pkgconf[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.59s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.92s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 327ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 35ms[0m
+
+[36m[22/100] Testing: libunistring[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.89s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.82s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 579ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 33ms[0m
+
+[36m[23/100] Testing: mpdecimal[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.90s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.40s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 292ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 65ms[0m
+
+[36m[24/100] Testing: brotli[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.64s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.79s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 359ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[25/100] Testing: jpeg-turbo[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.96s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.95s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 496ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 44ms[0m
+
+[36m[26/100] Testing: xorgproto[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.28s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.49s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 475ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 41ms[0m
+
+[36m[27/100] Testing: ffmpeg[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 29.19s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 24.40s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 5.16s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 595ms[0m
+
+[36m[28/100] Testing: cmake[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.77s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.36s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.52s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 87ms[0m
+
+[36m[29/100] Testing: libnghttp2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.83s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.77s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 356ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 40ms[0m
+
+[36m[30/100] Testing: go[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 10.79s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.16s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 6.94s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 176ms[0m
+
+[36m[31/100] Testing: uv[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.82s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.47s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.63s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 31ms[0m
+
+[36m[32/100] Testing: gmp[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.70s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.73s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 547ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 33ms[0m
+
+[36m[33/100] Testing: libtiff[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.02s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 7.48s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 991ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 68ms[0m
+
+[36m[34/100] Testing: fontconfig[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 11.97s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 9.87s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 4.52s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.49s[0m
+
+[36m[35/100] Testing: python@3.13[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 19.65s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 16.48s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.60s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 199ms[0m
+
+[36m[36/100] Testing: git[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 10.98s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 6.79s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 5.92s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 112ms[0m
+
+[36m[37/100] Testing: little-cms2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.93s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 8.56s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.18s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 63ms[0m
+
+[36m[38/100] Testing: dav1d[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.80s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.79s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 306ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 29ms[0m
+
+[36m[39/100] Testing: openexr[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 11.97s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 10.90s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.39s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 84ms[0m
+
+[36m[40/100] Testing: c-ares[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.58s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.75s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 419ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 35ms[0m
+
+[36m[41/100] Testing: tesseract[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 48.43s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 43.17s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 10.97s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.86s[0m
+
+[36m[42/100] Testing: p11-kit[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 10.60s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 9.64s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 425ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 36ms[0m
+
+[36m[43/100] Testing: imagemagick[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 19.44s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 16.51s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.35s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 87ms[0m
+
+[36m[44/100] Testing: zlib[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.59s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.74s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 264ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 29ms[0m
+
+[36m[45/100] Testing: libx11[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 6.94s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 6.05s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.03s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 197ms[0m
+
+[36m[46/100] Testing: freetype[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.43s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 3.46s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 559ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 35ms[0m
+
+[36m[47/100] Testing: protobuf[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.77s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 3.47s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 865ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 63ms[0m
+
+[36m[48/100] Testing: gnupg[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 29.66s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 26.60s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.36s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 223ms[0m
+
+[36m[49/100] Testing: openjph[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.61s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 8.16s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 818ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 56ms[0m
+
+[36m[50/100] Testing: libtasn1[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.57s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.75s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 307ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[51/100] Testing: ruby[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 24.93s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 19.33s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 5.17s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 1.19s[0m
+
+[36m[52/100] Testing: gnutls[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 19.16s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 18.40s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.03s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 141ms[0m
+
+[36m[53/100] Testing: expat[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.66s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.68s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 372ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 32ms[0m
+
+[36m[54/100] Testing: libsodium[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.64s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.72s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 386ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 31ms[0m
+
+[36m[55/100] Testing: simdjson[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.72s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.71s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 552ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 29ms[0m
+
+[36m[56/100] Testing: gemini-cli[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 39.23s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 33.62s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 7.94s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 875ms[0m
+
+[36m[57/100] Testing: libarchive[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 5.87s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.69s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 584ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 37ms[0m
+
+[36m[58/100] Testing: pyenv[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 17.15s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 14.90s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.24s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 562ms[0m
+
+[36m[59/100] Testing: pixman[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.50s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.80s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 319ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[60/100] Testing: curl[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 20.92s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 19.80s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.97s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 648ms[0m
+
+[36m[61/100] Testing: opus[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.60s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.74s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 892ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 33ms[0m
+
+[36m[62/100] Testing: unbound[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 17.42s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 14.14s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.40s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 549ms[0m
+
+[36m[63/100] Testing: cairo[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 23.45s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 21.29s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 5.98s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.76s[0m
+
+[36m[64/100] Testing: pango[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 32.93s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 28.25s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 9.23s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.83s[0m
+
+[36m[65/100] Testing: leptonica[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 11.57s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 10.17s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.78s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 76ms[0m
+
+[36m[66/100] Testing: libxcb[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 5.50s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.55s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 886ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 159ms[0m
+
+[36m[67/100] Testing: jpeg-xl[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 16.36s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 14.34s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.51s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 79ms[0m
+
+[36m[68/100] Testing: coreutils[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 14.88s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 13.60s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.81s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 540ms[0m
+
+[36m[69/100] Testing: certifi[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 9.50s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 8.52s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 443ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 39ms[0m
+
+[36m[70/100] Testing: krb5[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 13.85s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 11.78s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.34s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 507ms[0m
+
+[36m[71/100] Testing: docker[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.13s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.43s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.30s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[72/100] Testing: libheif[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 13.08s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 11.34s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.15s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 67ms[0m
+
+[36m[73/100] Testing: webp[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.84s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.13s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 628ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 47ms[0m
+
+[36m[74/100] Testing: libxext[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 7.89s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 6.90s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.02s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 219ms[0m
+
+[36m[75/100] Testing: libxau[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.16s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.25s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 395ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 48ms[0m
+
+[36m[76/100] Testing: gcc[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 25.68s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 10.51s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 15.72s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 71ms[0m
+
+[36m[77/100] Testing: bzip2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.29s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.36s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 252ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 27ms[0m
+
+[36m[78/100] Testing: libxdmcp[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.98s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.15s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 480ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 33ms[0m
+
+[36m[79/100] Testing: abseil[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.24s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.24s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 757ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 59ms[0m
+
+[36m[80/100] Testing: xcbeautify[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.45s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.64s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 689ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 46ms[0m
+
+[36m[81/100] Testing: libuv[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.83s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.84s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 289ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 29ms[0m
+
+[36m[82/100] Testing: giflib[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.60s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.75s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 255ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 27ms[0m
+
+[36m[83/100] Testing: utf8proc[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.58s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.71s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 287ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[84/100] Testing: libxrender[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 7.43s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 6.43s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 942ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 188ms[0m
+
+[36m[85/100] Testing: m4[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.47s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.35s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 396ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 42ms[0m
+
+[36m[86/100] Testing: graphite2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.70s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.75s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 409ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[87/100] Testing: openjdk[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 56.64s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 36.62s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 27.51s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 2.94s[0m
+
+[36m[88/100] Testing: uvwasi[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.48s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.51s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 437ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 30ms[0m
+
+[36m[89/100] Testing: libffi[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.54s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.70s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 277ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 28ms[0m
+
+[36m[90/100] Testing: libdeflate[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.68s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.76s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 361ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 28ms[0m
+
+[36m[91/100] Testing: llvm[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 57.63s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 11.72s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 58.91s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 151ms[0m
+
+[36m[92/100] Testing: aom[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 4.70s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.64s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 1.29s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 41ms[0m
+
+[36m[93/100] Testing: lzo[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.56s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.12s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 251ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 29ms[0m
+
+[36m[94/100] Testing: libevent[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 18.25s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 14.53s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.44s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 539ms[0m
+
+[36m[95/100] Testing: libgpg-error[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 6.36s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.54s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 3.39s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 73ms[0m
+
+[36m[96/100] Testing: libidn2[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 6.38s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 4.48s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.13s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 75ms[0m
+
+[36m[97/100] Testing: berkeley-db@5[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 5.78s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 2.95s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 2.59s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 57ms[0m
+
+[36m[98/100] Testing: deno[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 16.12s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 12.09s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 5.32s[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 67ms[0m
+
+[36m[99/100] Testing: libedit[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 3.31s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.71s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 417ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 35ms[0m
+
+[36m[100/100] Testing: oniguruma[0m
+  [33m-> Homebrew (cold)...[0m
+    [32mOK: 2.60s[0m
+  [33m-> Homebrew (warm)...[0m
+    [32mOK: 1.71s[0m
+  [33m-> zerobrew (cold)...[0m
+    [32mOK: 388ms[0m
+  [33m-> zerobrew (warm)...[0m
+    [32mOK: 28ms[0m
+
+Cleaning up...
+[36mWriting all formats to: results/2026-10-21[0m
+[32m  ✓ benchmark.txt[0m
+[32m  ✓ benchmark.json[0m
+[32m  ✓ benchmark.csv[0m
+[32m  ✓ benchmark.html[0m
+[32m  ✓ benchmark.md[0m
+[32mAll results written to: results/2026-10-21[0m
