@@ -61,7 +61,7 @@ pub struct MisnamedRecord {
 pub struct StaleStoreRef {
     pub store_key: String,
     pub refcount: i64,
-    pub on_disk: bool,
+    pub missing_store_entry: bool,
     pub referenced_by_any_keg: bool,
 }
 
@@ -200,13 +200,15 @@ impl Installer {
                 .get(store_ref.store_key.as_str())
                 .copied()
                 .unwrap_or(0);
-            let on_disk = disk_store_set.contains(store_ref.store_key.as_str());
+            // Source builds use a synthetic key; only bottles have store entries.
+            let missing_store_entry = !store_ref.store_key.starts_with("source:")
+                && !disk_store_set.contains(store_ref.store_key.as_str());
 
-            if store_ref.refcount != actual_count || !on_disk {
+            if store_ref.refcount != actual_count || missing_store_entry {
                 report.stale_store_refs.push(StaleStoreRef {
                     store_key: store_ref.store_key.clone(),
                     refcount: store_ref.refcount,
-                    on_disk,
+                    missing_store_entry,
                     referenced_by_any_keg: actual_count > 0,
                 });
             }
@@ -389,7 +391,7 @@ mod tests {
     use crate::cellar::Cellar;
     use crate::network::api::ApiClient;
     use crate::storage::blob::BlobCache;
-    use crate::storage::db::Database;
+    use crate::storage::db::{Database, StoreRef};
     use crate::storage::store::Store;
     use crate::{Installer, Linker};
 
@@ -486,6 +488,49 @@ mod tests {
         assert!(installer.db.get_installed("python").is_none());
         assert!(installer.db.get_installed("python@3.14").is_some());
         assert!(installer.cellar.keg_path("python@3.14", "3.14.7").exists());
+        assert!(installer.doctor().unwrap().is_healthy());
+    }
+
+    #[test]
+    fn source_install_has_no_store_entry() {
+        let tmp = TempDir::new().unwrap();
+        let root = tmp.path().join("zerobrew");
+        let prefix = tmp.path().join("prefix");
+        fs::create_dir_all(root.join("db")).unwrap();
+        let store = Store::new(&root).unwrap();
+        let cellar = Cellar::new(&root).unwrap();
+        fs::create_dir_all(cellar.keg_path("sourcepkg", "1.0")).unwrap();
+
+        let mut db = Database::open(&root.join("db/zb.sqlite3")).unwrap();
+        let tx = db.transaction().unwrap();
+        tx.record_install("sourcepkg", "1.0", "source:sourcepkg:1.0")
+            .unwrap();
+        tx.commit().unwrap();
+
+        let mut installer = Installer::new(
+            ApiClient::with_base_url("http://127.0.0.1:9/formula".to_string()).unwrap(),
+            BlobCache::new(&root.join("cache")).unwrap(),
+            store,
+            cellar,
+            Linker::new(&prefix).unwrap(),
+            db,
+            prefix,
+            root.join("locks"),
+        );
+
+        assert!(installer.doctor().unwrap().is_healthy());
+
+        installer
+            .db
+            .replace_store_refs(&[StoreRef {
+                store_key: "source:sourcepkg:1.0".to_string(),
+                refcount: 0,
+            }])
+            .unwrap();
+        let report = installer.doctor().unwrap();
+        assert_eq!(report.stale_store_refs.len(), 1);
+        assert!(!report.stale_store_refs[0].missing_store_entry);
+        installer.repair_until_healthy(report).unwrap();
         assert!(installer.doctor().unwrap().is_healthy());
     }
 }
