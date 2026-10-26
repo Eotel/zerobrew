@@ -61,8 +61,15 @@ pub struct MisnamedRecord {
 pub struct StaleStoreRef {
     pub store_key: String,
     pub refcount: i64,
-    pub missing_store_entry: bool,
+    pub on_disk: bool,
     pub referenced_by_any_keg: bool,
+}
+
+impl StaleStoreRef {
+    pub fn missing_store_entry(&self) -> bool {
+        // Source builds use a synthetic key; only bottles have store entries.
+        !self.on_disk && !self.store_key.starts_with("source:")
+    }
 }
 
 impl DiagnosticReport {
@@ -200,17 +207,15 @@ impl Installer {
                 .get(store_ref.store_key.as_str())
                 .copied()
                 .unwrap_or(0);
-            // Source builds use a synthetic key; only bottles have store entries.
-            let missing_store_entry = !store_ref.store_key.starts_with("source:")
-                && !disk_store_set.contains(store_ref.store_key.as_str());
+            let stale = StaleStoreRef {
+                store_key: store_ref.store_key.clone(),
+                refcount: store_ref.refcount,
+                on_disk: disk_store_set.contains(store_ref.store_key.as_str()),
+                referenced_by_any_keg: actual_count > 0,
+            };
 
-            if store_ref.refcount != actual_count || missing_store_entry {
-                report.stale_store_refs.push(StaleStoreRef {
-                    store_key: store_ref.store_key.clone(),
-                    refcount: store_ref.refcount,
-                    missing_store_entry,
-                    referenced_by_any_keg: actual_count > 0,
-                });
+            if stale.refcount != actual_count || stale.missing_store_entry() {
+                report.stale_store_refs.push(stale);
             }
         }
 
@@ -529,7 +534,8 @@ mod tests {
             .unwrap();
         let report = installer.doctor().unwrap();
         assert_eq!(report.stale_store_refs.len(), 1);
-        assert!(!report.stale_store_refs[0].missing_store_entry);
+        assert!(!report.stale_store_refs[0].on_disk);
+        assert!(!report.stale_store_refs[0].missing_store_entry());
         installer.repair_until_healthy(report).unwrap();
         assert!(installer.doctor().unwrap().is_healthy());
     }

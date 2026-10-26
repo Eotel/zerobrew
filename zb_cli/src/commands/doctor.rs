@@ -52,7 +52,7 @@ pub fn execute(
     }
 
     for stale in &report.stale_store_refs {
-        let status = if stale.missing_store_entry {
+        let status = if stale.missing_store_entry() {
             "not on disk"
         } else if !stale.referenced_by_any_keg {
             "unreferenced"
