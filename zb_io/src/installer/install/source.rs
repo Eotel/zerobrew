@@ -6,7 +6,7 @@ use zb_core::{BuildPlan, Error};
 
 use crate::progress::InstallProgress;
 
-use super::{Installer, PlannedInstall, dependency_cellar_path};
+use super::{Installer, PlannedInstall, SOURCE_KEY_PREFIX, dependency_cellar_path};
 
 impl Installer {
     pub(super) async fn install_from_source(
@@ -80,7 +80,7 @@ impl Installer {
             name: formula_name.clone(),
         });
 
-        let store_key = format!("source:{formula_name}:{version}");
+        let store_key = format!("{SOURCE_KEY_PREFIX}{formula_name}:{version}");
 
         let tx = self.db.transaction().inspect_err(|_| {
             Self::cleanup_materialized(&self.cellar, formula_name, &version);

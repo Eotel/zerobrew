@@ -68,7 +68,7 @@ pub struct StaleStoreRef {
 impl StaleStoreRef {
     pub fn missing_store_entry(&self) -> bool {
         // Source builds use a synthetic key; only bottles have store entries.
-        !self.on_disk && !self.store_key.starts_with("source:")
+        !self.on_disk && !self.store_key.starts_with(super::SOURCE_KEY_PREFIX)
     }
 }
 
@@ -538,5 +538,18 @@ mod tests {
         assert!(!report.stale_store_refs[0].missing_store_entry());
         installer.repair_until_healthy(report).unwrap();
         assert!(installer.doctor().unwrap().is_healthy());
+    }
+
+    #[test]
+    fn bottle_ref_without_store_entry_is_stale() {
+        let tmp = TempDir::new().unwrap();
+        let mut installer = installer_with_python_recorded_as(&tmp, &["python@3.14"]);
+        fs::remove_dir_all(installer.store.entry_path(KEY)).unwrap();
+
+        let report = installer.doctor().unwrap();
+        assert_eq!(report.stale_store_refs.len(), 1);
+        assert_eq!(report.stale_store_refs[0].store_key, KEY);
+        assert!(report.stale_store_refs[0].missing_store_entry());
+        assert!(!report.is_healthy());
     }
 }

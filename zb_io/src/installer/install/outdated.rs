@@ -9,7 +9,7 @@ impl Installer {
         })?;
 
         let formula = self.api_client.get_formula(name).await?;
-        let is_source = installed.store_key.starts_with("source:");
+        let is_source = installed.store_key.starts_with(super::SOURCE_KEY_PREFIX);
 
         if is_source {
             let current_version = formula.effective_version();
@@ -61,7 +61,7 @@ impl Installer {
                 }
             };
 
-            let is_source = keg.store_key.starts_with("source:");
+            let is_source = keg.store_key.starts_with(super::SOURCE_KEY_PREFIX);
 
             if is_source {
                 let current_version = formula.effective_version();

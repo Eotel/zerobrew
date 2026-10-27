@@ -31,6 +31,7 @@ use zb_core::{ConcurrencyLimits, Error, Formula, InstallMethod};
 use bottle::{BottleJob, dependency_cellar_path, prepare_bottle, stream_into_store};
 
 const MAX_CORRUPTION_RETRIES: usize = 3;
+const SOURCE_KEY_PREFIX: &str = "source:";
 
 /// Acquire the cross-process install lock. The returned `File` must be kept
 /// alive (e.g. `let _lock = ...`) for the duration the lock should be held —
